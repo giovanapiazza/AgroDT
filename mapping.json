@@ -1,0 +1,21 @@
+{
+  "mappings": [
+    {
+      "mavlink_id": 33,
+      "mavlink_name": "GLOBAL_POSITION_INT",
+      "opc_ua_base_node": "ns=2;s=UAV_1",
+      "fields": [
+        {"mavlink_field": "lat", "opc_node": ".Position.Latitude"},
+        {"mavlink_field": "lon", "opc_node": ".Position.Longitude"},
+        {"mavlink_field": "alt", "opc_node": ".Position.Altitude"}
+      ]
+    },
+    {
+      "mavlink_id": 1,
+      "mavlink_name": "SYS_STATUS",
+      "fields": [
+        {"mavlink_field": "battery", "opc_node": ".Status.BatteryLevel"}
+      ]
+    }
+  ]
+}
