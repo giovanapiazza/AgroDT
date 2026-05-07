@@ -1,0 +1,41 @@
+{% load static %}
+<!DOCTYPE html>
+<html lang="pt-br">
+<head>
+    <meta charset="UTF-8">
+    <title>AgroDT</title>
+    <link rel="stylesheet" href="{% static 'core/css/style.css' %}">
+</head>
+<body>
+
+<div class="navbar">
+    <strong>AgroDT Translator Configurator</strong>
+    <span>File</span>
+    <span>Translators</span>
+    <span>Export</span>
+    <span>Settings</span>
+    <span>Help</span>
+</div>
+
+<div class="container">
+    <div class="panel">
+        <div class="panel-header">Translator Configuration Panel</div>
+        <div class="center-text">
+            Load an AAS file to start configuring translators.
+        </div>
+    </div>
+
+    <div class="panel">
+        <div class="panel-header">AAS Tree</div>
+        <div class="center-text">No AAS loaded</div>
+    </div>
+</div>
+
+<div class="status-bar">
+    STATUS: No AAS loaded
+</div>
+
+<div class="help-btn">?</div>
+
+</body>
+</html>
