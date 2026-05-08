@@ -68,8 +68,12 @@ Large-scale runtime deployment or orchestration of translation servers.
 
 # Conceptual Pipeline
 
-```mermaid
-graph TD
-    A[AAS Models] --> B[AgroDT Translator Configurator]
+Digital Twin Models (AAS)
+            ↓
+     OPC-UA Generator
+            ↓
+      OPC-UA Server
+            ↓
+        Publisher
     B --> C[Configuration Files .json/.yaml]
     C --> D[Translators / OPC UA Server]
