@@ -157,6 +157,7 @@ Suggested naming convention:
 
 ```text
 <issue-number>-add-<translator>-feature
+```
 
 # Naming Convention
 
@@ -166,3 +167,82 @@ Branches related to new protocol integrations should follow the naming pattern b
 
 ```text
 <issue-number>-add-<protocol>-support
+```
+
+# Commit Message Convention
+
+All commits must follow the Conventional Commits specification.
+
+## Examples
+
+```text
+feat(ui): add MAVLink mapping interface
+fix(parser): correct AAS file parsing behavior
+docs(manual): update interface user guide
+chore(deps): update Django dependencies
+```
+
+# Pull Requests
+
+Pull Requests are recommended for:
+
+- new protocol support
+- export format modifications
+- major interface redesigns
+- mapping engine changes
+- validation logic changes
+- performance improvements in AAS rendering
+
+Squash merge is recommended when appropriate.
+
+---
+
+# Methodology Documentation
+
+This repository includes methodological documentation describing:
+
+- protocol-to-AAS mapping strategies
+- translator configuration workflows
+- data type compatibility rules
+- mapping validation principles
+- protocol abstraction methodologies
+- interoperability assumptions
+- alignment with AgroDT architectural principles
+
+Documentation is maintained under the `docs/` directory.
+
+# Project Structure
+
+```text
+agrodt_ui/
+├── manage.py
+├── db.sqlite3
+│
+├── config/
+│   ├── __init__.py
+│   ├── settings.py
+│   ├── urls.py
+│   ├── asgi.py
+│   └── wsgi.py
+│
+└── interface/
+    ├── __init__.py
+    ├── admin.py
+    ├── apps.py
+    ├── models.py
+    ├── tests.py
+    ├── views.py
+    ├── urls.py
+    │
+    ├── templates/
+    │   └── interface/
+    │       └── home.html
+    │
+    └── static/
+        └── interface/
+            ├── css/
+            │   └── style.css
+            │
+            └── js/
+                └── main.js
+```
