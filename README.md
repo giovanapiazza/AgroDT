@@ -105,6 +105,7 @@ Translator Configuration Files
 Protocol Translators
       ↓
 OPC UA Infrastructure
+```
 
 
 # Repository Philosophy
