@@ -2,11 +2,24 @@
 
 ## Overview
 
-This repository provides a web-based Graphical User Interface (GUI) developed in Python with Django to configure protocol translators for the AgroDT project.
+This repository provides the graphical configuration environment for the AgroDT ecosystem.
 
-The system's primary objective is to streamline the creation of configuration files for translators that convert data from protocols such as MQTT, Modbus, and MAVLink to OPC UA, using the Asset Administration Shell (AAS) model as a reference.
+It focuses on the creation, management, validation, and export of protocol translator configurations used to integrate agricultural Digital Twins with standardized OPC UA infrastructures.
 
-This tool serves as the operational link between static model definitions and real-time data flows.
+The system is implemented as a web-based Graphical User Interface (GUI) using Python and Django, providing an operational environment for configuring translators responsible for converting heterogeneous communication protocols into OPC UA-compatible representations.
+
+The repository acts as the configuration and orchestration layer between:
+
+- Digital Twin models (AAS-based structures)
+- Communication protocols
+- OPC UA translation services
+- Translator runtime environments
+
+Supported communication protocols currently include:
+
+- MQTT
+- Modbus
+- MAVLink
 
 ---
 
@@ -14,20 +27,13 @@ This tool serves as the operational link between static model definitions and re
 
 The main objectives of this repository are:
 
-- Standardized Mapping  
-  Provide an intuitive tool for mapping field protocols to standardized AAS properties.
-
-- Multi-Asset Support  
-  Support configuration creation for multiple agricultural assets (UAVs, crops, machinery).
-
-- Traceability  
-  Ensure persistence and versioning of mapping projects performed by users.
-
-- Documentation  
-  Document translation procedures and integration between data and communication layers.
-
-- Ecosystem Integration  
-  Ensure interoperability with other repositories in the AgroDT ecosystem.
+- To provide a centralized graphical environment for translator configuration
+- To simplify protocol-to-AAS mapping creation
+- To support multiple agricultural asset types and communication protocols
+- To enable reusable and versionable translator configurations
+- To improve interoperability across AgroDT repositories
+- To provide operational tooling for Digital Twin integration workflows
+- To abstract low-level protocol complexity from end users
 
 ---
 
@@ -35,89 +41,280 @@ The main objectives of this repository are:
 
 ## In Scope
 
-This repository covers the configuration interface, logical mapping, and the generation of integration artifacts.
+This repository covers the graphical configuration environment and the logical representation of translator mappings.
 
-### Interface and Tooling
+### Interface and Configuration Tooling
 
-- Hierarchical visualization (tree view) of imported AAS structures.
-- Specific mapping modules for MQTT, Modbus, and MAVLink protocols.
-- Automatic generation of configuration files for reference translators.
-- Validation scripts to ensure mapping adheres to the original AAS model.
+- Graphical user interface for translator configuration
+- Hierarchical visualization of imported AAS structures
+- Interactive AAS Tree navigation
+- MQTT translator configuration modules
+- Modbus translator configuration modules
+- MAVLink translator configuration modules
+- Mapping editors between protocol fields and AAS properties
+- Validation and consistency checks
+- Project save/load functionality
+- Export of translator configuration artifacts
+- Theme and interface customization
+- Operational status and feedback visualization
+
+### Translator Configuration Management
+
+- Protocol parameter configuration
+- Mapping persistence
+- Translator selection and orchestration
+- Configuration export generation
+- Validation of required translator fields
+- Support for `.json`, `.aasx`, and internal project formats
 
 ### Interface Documentation
 
-- User guides for the graphical interface and internal API routes.
+- Usage instructions
+- Configuration workflow documentation
+- Translator configuration methodology
+- Integration examples
 
 ---
 
 ## Out of Scope
 
-### Model Editing
+This repository does not include:
 
-The software does not modify the AAS structure; it acts solely as a model consumer.
+- Runtime execution of translators
+- OPC UA server runtime orchestration
+- Cloud deployment infrastructure
+- Analytics or dashboard systems
+- Farm management systems
+- AAS authoring or editing
+- Real-time protocol brokers
+- Production middleware orchestration
 
-### Runtime Execution
-
-This repository does not execute the actual data translation; it only generates its configuration.
-
-### Cloud Orchestration
-
-Large-scale runtime deployment or orchestration of translation servers.
+The repository is strictly focused on translator configuration and mapping generation.
 
 ---
 
 # Conceptual Pipeline
 
-Digital Twin Models (AAS)
-            ↓
-     OPC-UA Generator
-            ↓
-      OPC-UA Server
-            ↓
-        Publisher
+```text
+AAS Models
+      ↓
+AgroDT Translator Configurator
+      ↓
+Translator Configuration Files
+      ↓
+Protocol Translators
+      ↓
+OPC UA Infrastructure
+Repository Philosophy
 
-        # Repository Philosophy
+This repository is designed to be the operational control point for protocol translation configuration.
 
-This repository is designed to be the operational control point for the data pipeline.
+Key principles include:
 
----
+Configuration as Code
 
-## Configuration as Code
+Although the system uses a graphical interface, all generated outputs are declarative and versionable configuration artifacts.
 
-While using a GUI, the final output consists of declarative and versionable configuration files.
+Model Fidelity
 
----
+Mappings are strictly tied to the imported AAS structure and its version.
 
-## Model Fidelity
+User-Centric Design
 
-Mapping is strictly tied to the version of the imported AAS.
+Complex communication protocols are abstracted into an accessible engineering-oriented configuration interface.
 
----
+Traceability
 
-## User-Centric Design
+Projects, mappings, and exported configurations should remain reproducible and versionable.
 
-Abstraction of complex protocols for users focused on agronomy or data management.
+Modularity
 
----
+Protocol translators are designed as independent and extensible configuration modules.
 
-# Versioning Strategy
+Versioning Strategy
+Translator configurations should inherit the version of the imported AAS model whenever applicable
+Changes that modify export structures or mapping semantics must generate a new tool version
+Legacy interface versions may remain available through dedicated branches
+Mapping evolution should preserve compatibility whenever possible
+Contribution Guidelines
 
-- Generated configurations must inherit the version of the reference AAS model.
-- Changes in interface logic that alter the export format must trigger a new tool version (e.g., `v1.0`, `v1.1`).
-- Previous interface versions should be maintained in specific branches for compatibility with legacy models.
+Although the repository includes executable code and interface components, contributions should prioritize consistency, traceability, and modularity.
 
----
+Branching Policy
 
-# Contribution Guidelines
-
-## Branching Policy
-
-Contributors should work on short-lived feature branches.
+Contributors should use short-lived feature branches.
 
 Suggested naming convention:
 
-```text
-<issue-number>-add-<protocol>-support
+<issue-number>-add-<translator>-feature
 
-    B --> C[Configuration Files .json/.yaml]
-    C --> D[Translators / OPC UA Server]
+Example:
+
+18-add-mqtt-mapping-validation
+Commit Message Convention
+
+All commits must follow the Conventional Commits specification.
+
+Format:
+
+<type>(<scope>): <description>
+
+Recommended commit types:
+
+feat: new translator features or interface modules
+fix: corrections in parsing, mappings, or interface behavior
+docs: documentation updates
+style: visual/interface adjustments
+refactor: internal structural improvements
+chore: dependency or project maintenance
+
+Examples:
+
+feat(ui): add MQTT mapping editor
+fix(parser): correct AAS JSON parsing
+docs(help): update translator workflow instructions
+style(theme): improve dark mode contrast
+Pull Requests
+
+Pull Requests are recommended for:
+
+new protocol support
+export format modifications
+major interface redesigns
+mapping engine changes
+validation logic changes
+performance improvements in AAS rendering
+
+Squash merge is recommended when appropriate.
+
+Methodology Documentation
+
+This repository includes methodological documentation describing:
+
+protocol-to-AAS mapping strategies
+translator configuration workflows
+data type compatibility rules
+mapping validation principles
+protocol abstraction methodologies
+interoperability assumptions
+alignment with AgroDT architectural principles
+
+Documentation is maintained under the docs/ directory.
+
+Project Structure
+agrodt_ui/
+├── manage.py
+├── db.sqlite3
+│
+├── config/
+│   ├── __init__.py
+│   ├── settings.py
+│   ├── urls.py
+│   ├── asgi.py
+│   └── wsgi.py
+│
+└── interface/
+    ├── __init__.py
+    ├── admin.py
+    ├── apps.py
+    ├── models.py
+    ├── tests.py
+    ├── views.py
+    ├── urls.py
+    │
+    ├── templates/
+    │   └── interface/
+    │       └── home.html
+    │
+    └── static/
+        └── interface/
+            ├── css/
+            │   └── style.css
+            │
+            └── js/
+                └── main.js
+Supported Features
+AAS Import
+
+Supported formats:
+
+.json
+.aasx
+Translator Modules
+
+Supported translators:
+
+MQTT
+Modbus
+MAVLink
+Mapping Engine
+
+Supports:
+
+protocol field binding
+AAS property selection
+mapping validation
+translator-specific configuration
+Export System
+
+Supports export of:
+
+.json
+.yaml
+.agrodt
+
+configuration artifacts.
+
+Technologies
+Python
+Django
+HTML5
+CSS3
+JavaScript
+SQLite
+Running the Project
+Create Virtual Environment
+python3 -m venv venv
+Activate Environment
+source venv/bin/activate
+Install Dependencies
+pip install django
+Run Migrations
+python manage.py migrate
+Start Development Server
+python manage.py runserver
+
+Open:
+
+http://127.0.0.1:8000/
+Network Access
+
+To allow devices on the local network to access the interface:
+
+python manage.py runserver 0.0.0.0:8000
+
+Configure:
+
+ALLOWED_HOSTS = ['*']
+
+Retrieve local IP:
+
+hostname -I
+
+Access from another machine:
+
+http://YOUR_IP:8000/
+Future Improvements
+
+Planned future developments include:
+
+real .aasx parsing support
+OPC UA live integration
+runtime translator execution
+YAML schema validation
+SQLite persistence improvements
+online AAS repository integration
+multi-user support
+advanced validation engines
+plugin-based translator architecture
+enhanced dark mode support
