@@ -75,5 +75,49 @@ Digital Twin Models (AAS)
       OPC-UA Server
             ↓
         Publisher
+
+        # Repository Philosophy
+
+This repository is designed to be the operational control point for the data pipeline.
+
+---
+
+## Configuration as Code
+
+While using a GUI, the final output consists of declarative and versionable configuration files.
+
+---
+
+## Model Fidelity
+
+Mapping is strictly tied to the version of the imported AAS.
+
+---
+
+## User-Centric Design
+
+Abstraction of complex protocols for users focused on agronomy or data management.
+
+---
+
+# Versioning Strategy
+
+- Generated configurations must inherit the version of the reference AAS model.
+- Changes in interface logic that alter the export format must trigger a new tool version (e.g., `v1.0`, `v1.1`).
+- Previous interface versions should be maintained in specific branches for compatibility with legacy models.
+
+---
+
+# Contribution Guidelines
+
+## Branching Policy
+
+Contributors should work on short-lived feature branches.
+
+Suggested naming convention:
+
+```text
+<issue-number>-add-<protocol>-support
+
     B --> C[Configuration Files .json/.yaml]
     C --> D[Translators / OPC UA Server]
