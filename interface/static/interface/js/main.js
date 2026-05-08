@@ -1,254 +1,650 @@
-console.log("AgroDT UI Loaded");
+console.log("AgroDT interface loaded");
 
-// ======================================
-// FILE MENU
-// ======================================
+const fileButton = document.getElementById("fileButton");
+const fileDropdown = document.getElementById("fileDropdown");
 
-function toggleFileMenu() {
+const aasInput = document.getElementById("aasInput");
+const projectInput = document.getElementById("projectInput");
 
-    document
-        .getElementById("fileMenu")
-        .classList.toggle("hidden");
+const aasEmpty = document.getElementById("aasEmpty");
+const aasLoadedArea = document.getElementById("aasLoadedArea");
+const aasTree = document.getElementById("aasTree");
+const aasFileName = document.getElementById("aasFileName");
+const aasSearchInput = document.getElementById("aasSearchInput");
+
+const initialMessage = document.getElementById("initialMessage");
+const addTranslatorMessage = document.getElementById("addTranslatorMessage");
+const translatorArea = document.getElementById("translatorArea");
+
+const translatorButton = document.getElementById("translatorButton");
+const exportButton = document.getElementById("exportButton");
+const translatorModal = document.getElementById("translatorModal");
+const exportModal = document.getElementById("exportModal");
+
+const tabs = document.getElementById("tabs");
+
+const mqttPanel = document.getElementById("mqttPanel");
+const mavlinkPanel = document.getElementById("mavlinkPanel");
+const modbusPanel = document.getElementById("modbusPanel");
+
+const mqttAasProperty = document.getElementById("mqttAasProperty");
+const mavAasProperty = document.getElementById("mavAasProperty");
+const modbusAasProperty = document.getElementById("modbusAasProperty");
+
+const mqttTable = document.getElementById("mqttTable");
+const mavlinkTable = document.getElementById("mavlinkTable");
+const modbusTable = document.getElementById("modbusTable");
+
+let loadedAASData = null;
+let activeTranslator = "MQTT";
+let selectedTranslators = ["Modbus", "MQTT", "MAVLink"];
+let selectedAASProperty = "";
+
+let mqttMappings = [
+    {
+        topic: "sensors/temperature",
+        fieldName: "value",
+        dataType: "Float",
+        aasProperty: "Asset > Submodel A > Property 1",
+        status: "active"
+    },
+    {
+        topic: "sensors/humidity",
+        fieldName: "value",
+        dataType: "Float",
+        aasProperty: "Asset > Submodel A > Property 2",
+        status: "active"
+    },
+    {
+        topic: "actuators/valve",
+        fieldName: "state",
+        dataType: "Boolean",
+        aasProperty: "Asset > Submodel B > Property 3",
+        status: "pending"
+    }
+];
+
+let mavlinkMappings = [
+    {
+        message: "GLOBAL_POSITION_INT",
+        field: "lat",
+        dataType: "Int32",
+        aasProperty: "Asset > Submodel A > Property 1",
+        status: "active"
+    },
+    {
+        message: "GLOBAL_POSITION_INT",
+        field: "lon",
+        dataType: "Int32",
+        aasProperty: "Asset > Submodel A > Property 2",
+        status: "active"
+    },
+    {
+        message: "ATTITUDE",
+        field: "roll",
+        dataType: "Float",
+        aasProperty: "Asset > Submodel B > Property 3",
+        status: "pending"
+    }
+];
+
+let modbusMappings = [
+    {
+        registerType: "Holding Register",
+        address: "40001",
+        dataType: "Float",
+        aasProperty: "Asset > Submodel A > Property 1",
+        status: "active"
+    },
+    {
+        registerType: "Input Register",
+        address: "30002",
+        dataType: "Int16",
+        aasProperty: "Asset > Submodel A > Property 2",
+        status: "active"
+    },
+    {
+        registerType: "Coil",
+        address: "00001",
+        dataType: "Boolean",
+        aasProperty: "Asset > Submodel B > Property 3",
+        status: "pending"
+    }
+];
+
+fileButton.addEventListener("click", function(event) {
+    event.stopPropagation();
+    fileDropdown.classList.toggle("hidden");
+});
+
+document.addEventListener("click", function() {
+    fileDropdown.classList.add("hidden");
+});
+
+function setStatus(type, message) {
+    const footer = document.querySelector(".statusbar");
+
+    footer.innerHTML = `
+        <strong>${type}:</strong>
+        <span>${message}</span>
+    `;
 }
-
-// ======================================
-// STATUS BAR
-// ======================================
-
-function updateStatus(type, message) {
-
-    const label =
-        document.querySelector(".status-label");
-
-    const text =
-        label.nextElementSibling;
-
-    label.innerText = type + ":";
-
-    text.innerText = message;
-}
-
-// ======================================
-// IMPORT AAS
-// ======================================
 
 function importAAS() {
-
-    document
-        .getElementById("aasFileInput")
-        .click();
+    aasInput.click();
 }
 
-document
-.getElementById("aasFileInput")
-.addEventListener("change", function(event){
-
+aasInput.addEventListener("change", function(event) {
     const file = event.target.files[0];
 
-    if(!file) return;
+    if (!file) return;
 
-    updateStatus(
-        "Success",
-        "AAS loaded successfully: " + file.name
-    );
+    const fileName = file.name.toLowerCase();
 
-    console.log("AAS imported:", file.name);
-});
+    if (!fileName.endsWith(".json") && !fileName.endsWith(".aasx")) {
+        setStatus("ERROR", "Invalid AAS file. Use .json or .aasx");
+        return;
+    }
 
-// ======================================
-// OPEN PROJECT
-// ======================================
+    if (fileName.endsWith(".aasx")) {
+        aasFileName.textContent = "Industrial Asset Model";
+        showMockAASTree();
+        showAddTranslatorState();
+        setStatus("SUCCESS", "AAS loaded successfully");
+        return;
+    }
 
-function openProject() {
+    const reader = new FileReader();
 
-    document
-        .getElementById("projectFileInput")
-        .click();
-}
-
-document
-.getElementById("projectFileInput")
-.addEventListener("change", function(event){
-
-    const file = event.target.files[0];
-
-    if(!file) return;
-
-    updateStatus(
-        "Success",
-        "Project opened: " + file.name
-    );
-
-    console.log("Project loaded:", file.name);
-});
-
-// ======================================
-// SAVE PROJECT
-// ======================================
-
-function saveProject() {
-
-    const projectData = {
-
-        translators: [
-            "MQTT",
-            "Modbus"
-        ],
-
-        mqtt: {
-
-            broker: "mqtt.example.com",
-            port: 1883
+    reader.onload = function(e) {
+        try {
+            loadedAASData = JSON.parse(e.target.result);
+            aasFileName.textContent = "Industrial Asset Model";
+            renderAASTree(loadedAASData);
+            showAddTranslatorState();
+            setStatus("SUCCESS", "AAS loaded successfully");
+        } catch (error) {
+            setStatus("ERROR", "Failed to read JSON file");
         }
     };
 
-    const blob = new Blob(
-        [JSON.stringify(projectData, null, 2)],
-        {type:"application/json"}
-    );
+    reader.readAsText(file);
+});
 
-    const a = document.createElement("a");
+function showAddTranslatorState() {
+    initialMessage.classList.add("hidden");
+    translatorArea.classList.add("hidden");
+    addTranslatorMessage.classList.remove("hidden");
 
-    a.href = URL.createObjectURL(blob);
-
-    a.download = "project.agrodt";
-
-    a.click();
-
-    updateStatus(
-        "Success",
-        "Project saved successfully"
-    );
+    aasEmpty.classList.add("hidden");
+    aasLoadedArea.classList.remove("hidden");
 }
 
-// ======================================
-// SAVE PROJECT AS
-// ======================================
+function showTranslatorState() {
+    initialMessage.classList.add("hidden");
+    addTranslatorMessage.classList.add("hidden");
+    translatorArea.classList.remove("hidden");
 
-function saveProjectAs() {
+    renderTabs();
+    showPanel(activeTranslator);
+    renderAllTables();
+}
 
-    const filename =
-        prompt("Enter project name:");
-
-    if(!filename) return;
-
-    const projectData = {
-
-        translators:["MQTT"]
+function showMockAASTree() {
+    const mockAAS = {
+        Asset: {
+            "Submodel A": {
+                "Property 1": "Available",
+                "Property 2": "Available"
+            },
+            "Submodel B": {
+                "Property 3": "Available"
+            }
+        }
     };
 
-    const blob = new Blob(
-        [JSON.stringify(projectData, null, 2)],
-        {type:"application/json"}
-    );
+    loadedAASData = mockAAS;
+    renderAASTree(mockAAS);
 
-    const a = document.createElement("a");
-
-    a.href = URL.createObjectURL(blob);
-
-    a.download = filename + ".agrodt";
-
-    a.click();
-
-    updateStatus(
-        "Success",
-        "Project saved as " + filename
-    );
+    aasEmpty.classList.add("hidden");
+    aasLoadedArea.classList.remove("hidden");
 }
 
-// ======================================
-// CLOSE PROJECT
-// ======================================
-
-function closeProject() {
-
-    if(!confirm("Close current project?"))
-        return;
-
-    updateStatus(
-        "Status",
-        "Project closed"
-    );
-
-    console.log("Project closed");
+function renderAASTree(data) {
+    aasTree.innerHTML = "";
+    const root = createTreeNode("Asset", data, "Asset");
+    aasTree.appendChild(root);
 }
 
-// ======================================
-// EXIT
-// ======================================
+function createTreeNode(key, value, path) {
+    const wrapper = document.createElement("div");
 
-function exitApplication() {
+    const row = document.createElement("div");
+    row.className = "tree-row";
 
-    const confirmExit =
-        confirm("Exit AgroDT Translator Configurator?");
+    const isObject = value !== null && typeof value === "object";
 
-    if(confirmExit){
+    const toggle = document.createElement("span");
+    toggle.className = "tree-toggle";
+    toggle.textContent = isObject ? "⌄" : "•";
 
-        window.close();
+    const keySpan = document.createElement("span");
+    keySpan.textContent = key;
 
-        updateStatus(
-            "Status",
-            "Application closed"
-        );
+    row.appendChild(toggle);
+    row.appendChild(keySpan);
+
+    wrapper.appendChild(row);
+
+    let childrenContainer = null;
+
+    if (isObject) {
+        childrenContainer = document.createElement("div");
+        childrenContainer.className = "tree-children";
+
+        Object.keys(value).forEach(childKey => {
+            childrenContainer.appendChild(
+                createTreeNode(childKey, value[childKey], `${path} > ${childKey}`)
+            );
+        });
+
+        wrapper.appendChild(childrenContainer);
     }
+
+    row.addEventListener("click", function(event) {
+        event.stopPropagation();
+
+        document.querySelectorAll(".tree-row").forEach(item => {
+            item.classList.remove("selected-node");
+        });
+
+        row.classList.add("selected-node");
+
+        selectedAASProperty = path;
+        mqttAasProperty.value = path;
+        mavAasProperty.value = path;
+        modbusAasProperty.value = path;
+
+        if (childrenContainer) {
+            childrenContainer.classList.toggle("hidden");
+            toggle.textContent = childrenContainer.classList.contains("hidden") ? "›" : "⌄";
+        }
+
+        setStatus("SUCCESS", path + " selected");
+    });
+
+    return wrapper;
 }
 
-// ======================================
-// TRANSLATOR MODAL
-// ======================================
+aasSearchInput.addEventListener("input", function() {
+    const search = aasSearchInput.value.toLowerCase();
 
-function openTranslatorModal() {
+    document.querySelectorAll(".tree-row").forEach(row => {
+        row.style.display = row.textContent.toLowerCase().includes(search)
+            ? "flex"
+            : "none";
+    });
+});
 
-    document
-        .getElementById("translatorModal")
-        .classList.remove("hidden");
-}
+translatorButton.addEventListener("click", function() {
+    translatorModal.classList.remove("hidden");
+});
+
+exportButton.addEventListener("click", function() {
+    exportModal.classList.remove("hidden");
+});
 
 function closeTranslatorModal() {
-
-    document
-        .getElementById("translatorModal")
-        .classList.add("hidden");
-}
-
-// ======================================
-// EXPORT MODAL
-// ======================================
-
-function openExportModal() {
-
-    document
-        .getElementById("exportModal")
-        .classList.remove("hidden");
+    translatorModal.classList.add("hidden");
 }
 
 function closeExportModal() {
-
-    document
-        .getElementById("exportModal")
-        .classList.add("hidden");
+    exportModal.classList.add("hidden");
 }
 
-// ======================================
-// CLOSE MODALS CLICKING OUTSIDE
-// ======================================
+function applyTranslators() {
+    selectedTranslators = Array.from(
+        document.querySelectorAll(".translator-check:checked")
+    ).map(item => item.value);
 
-
-window.onclick = function(event){
-
-    const translatorModal =
-        document.getElementById("translatorModal");
-
-    const exportModal =
-        document.getElementById("exportModal");
-
-    if(event.target === translatorModal){
-
-        closeTranslatorModal();
+    if (selectedTranslators.length === 0) {
+        setStatus("WARNING", "Select at least one translator");
+        return;
     }
 
-    if(event.target === exportModal){
+    activeTranslator = selectedTranslators.includes("MQTT")
+        ? "MQTT"
+        : selectedTranslators[0];
 
-        closeExportModal();
+    closeTranslatorModal();
+    showTranslatorState();
+
+    setStatus("SUCCESS", "Translators selected");
+}
+
+function exportConfiguration() {
+    const data = {
+        mqtt: mqttMappings,
+        mavlink: mavlinkMappings,
+        modbus: modbusMappings
+    };
+
+    downloadJSON(data, "translator_config.json");
+
+    closeExportModal();
+    setStatus("SUCCESS", "Configuration exported");
+}
+
+translatorModal.addEventListener("click", function(event) {
+    if (event.target === translatorModal) closeTranslatorModal();
+});
+
+exportModal.addEventListener("click", function(event) {
+    if (event.target === exportModal) closeExportModal();
+});
+
+function renderTabs() {
+    tabs.innerHTML = "";
+
+    selectedTranslators.forEach(translator => {
+        const button = document.createElement("button");
+        button.className = "tab-button";
+        button.textContent = translator;
+
+        if (translator === activeTranslator) {
+            button.classList.add("active");
+        }
+
+        button.addEventListener("click", function() {
+            activeTranslator = translator;
+            renderTabs();
+            showPanel(translator);
+        });
+
+        tabs.appendChild(button);
+    });
+}
+
+function showPanel(translator) {
+    mqttPanel.classList.add("hidden");
+    mavlinkPanel.classList.add("hidden");
+    modbusPanel.classList.add("hidden");
+
+    if (translator === "MQTT") mqttPanel.classList.remove("hidden");
+    if (translator === "MAVLink") mavlinkPanel.classList.remove("hidden");
+    if (translator === "Modbus") modbusPanel.classList.remove("hidden");
+}
+
+function renderAllTables() {
+    renderMQTTTable();
+    renderMAVLinkTable();
+    renderModbusTable();
+}
+
+function renderMQTTTable() {
+    mqttTable.innerHTML = "";
+
+    mqttMappings.forEach((item, index) => {
+        mqttTable.innerHTML += `
+            <tr>
+                <td>${item.topic}</td>
+                <td>${item.fieldName}</td>
+                <td>${item.dataType}</td>
+                <td>${item.aasProperty}</td>
+                <td><span class="badge ${item.status}">${item.status}</span></td>
+                <td><button class="secondary" onclick="deleteMQTTMapping(${index})">🗑</button></td>
+            </tr>
+        `;
+    });
+}
+
+function renderMAVLinkTable() {
+    mavlinkTable.innerHTML = "";
+
+    mavlinkMappings.forEach((item, index) => {
+        mavlinkTable.innerHTML += `
+            <tr>
+                <td>${item.message}</td>
+                <td>${item.field}</td>
+                <td>${item.dataType}</td>
+                <td>${item.aasProperty}</td>
+                <td><span class="badge ${item.status}">${item.status}</span></td>
+                <td><button class="secondary" onclick="deleteMAVLinkMapping(${index})">🗑</button></td>
+            </tr>
+        `;
+    });
+}
+
+function renderModbusTable() {
+    modbusTable.innerHTML = "";
+
+    modbusMappings.forEach((item, index) => {
+        modbusTable.innerHTML += `
+            <tr>
+                <td>${item.registerType}</td>
+                <td>${item.address}</td>
+                <td>${item.dataType}</td>
+                <td>${item.aasProperty}</td>
+                <td><span class="badge ${item.status}">${item.status}</span></td>
+                <td><button class="secondary" onclick="deleteModbusMapping(${index})">🗑</button></td>
+            </tr>
+        `;
+    });
+}
+
+function addMQTTMapping() {
+    mqttMappings.push({
+        topic: document.getElementById("mqttTopic").value || "new/topic",
+        fieldName: document.getElementById("mqttField").value || "value",
+        dataType: document.getElementById("mqttDataType").value,
+        aasProperty: selectedAASProperty || "No property selected",
+        status: "pending"
+    });
+
+    renderMQTTTable();
+    setStatus("SUCCESS", "MQTT mapping added");
+}
+
+function addMAVLinkMapping() {
+    mavlinkMappings.push({
+        message: document.getElementById("mavMessage").value,
+        field: document.getElementById("mavField").value || "field",
+        dataType: document.getElementById("mavDataType").value,
+        aasProperty: selectedAASProperty || "No property selected",
+        status: "pending"
+    });
+
+    renderMAVLinkTable();
+    setStatus("SUCCESS", "MAVLink mapping added");
+}
+
+function addModbusMapping() {
+    modbusMappings.push({
+        registerType: document.getElementById("modbusRegisterType").value,
+        address: document.getElementById("modbusAddress").value || "40001",
+        dataType: document.getElementById("modbusDataType").value,
+        aasProperty: selectedAASProperty || "No property selected",
+        status: "pending"
+    });
+
+    renderModbusTable();
+    setStatus("SUCCESS", "Modbus mapping added");
+}
+
+function deleteMQTTMapping(index) {
+    mqttMappings.splice(index, 1);
+    renderMQTTTable();
+}
+
+function deleteMAVLinkMapping(index) {
+    mavlinkMappings.splice(index, 1);
+    renderMAVLinkTable();
+}
+
+function deleteModbusMapping(index) {
+    modbusMappings.splice(index, 1);
+    renderModbusTable();
+}
+
+function openProject() {
+    projectInput.click();
+}
+
+projectInput.addEventListener("change", function(event) {
+    const file = event.target.files[0];
+    if (!file) return;
+
+    showMockAASTree();
+    showTranslatorState();
+    setStatus("SUCCESS", "Project opened: " + file.name);
+});
+
+function saveProject() {
+    const project = {
+        software: "AgroDT Translator Configurator",
+        aas_loaded: aasFileName.textContent || null,
+        mqtt: mqttMappings,
+        mavlink: mavlinkMappings,
+        modbus: modbusMappings
+    };
+
+    downloadJSON(project, "project.agrodt");
+    setStatus("SUCCESS", "Project saved");
+}
+
+function saveProjectAs() {
+    const name = prompt("Project name:", "agrodt_project");
+    if (!name) return;
+
+    saveProject();
+    setStatus("SUCCESS", "Project saved as " + name + ".agrodt");
+}
+
+function closeProject() {
+    if (!confirm("Close current project?")) return;
+
+    aasTree.innerHTML = "";
+    aasFileName.textContent = "";
+    selectedAASProperty = "";
+
+    aasLoadedArea.classList.add("hidden");
+    aasEmpty.classList.remove("hidden");
+
+    translatorArea.classList.add("hidden");
+    addTranslatorMessage.classList.add("hidden");
+    initialMessage.classList.remove("hidden");
+
+    setStatus("STATUS", "No AAS loaded");
+}
+
+function exitApp() {
+    alert("In the desktop version this would close the application.");
+}
+
+function downloadJSON(data, filename) {
+    const blob = new Blob(
+        [JSON.stringify(data, null, 4)],
+        { type: "application/json" }
+    );
+
+    const url = URL.createObjectURL(blob);
+    const a = document.createElement("a");
+
+    a.href = url;
+    a.download = filename;
+
+    document.body.appendChild(a);
+    a.click();
+    document.body.removeChild(a);
+
+    URL.revokeObjectURL(url);
+}
+const settingsButton = document.getElementById("settingsButton");
+const settingsModal = document.getElementById("settingsModal");
+
+let globalSettings = {
+    projectMetadata: {},
+    aasProvider: {},
+    protocolDefaults: {},
+    interfaceUX: {},
+    exportSettings: {}
+};
+
+settingsButton.addEventListener("click", function() {
+    settingsModal.classList.remove("hidden");
+});
+
+function closeSettingsModal() {
+    settingsModal.classList.add("hidden");
+}
+
+settingsModal.addEventListener("click", function(event) {
+    if (event.target === settingsModal) {
+        closeSettingsModal();
+    }
+});
+
+function saveSettings() {
+    globalSettings = {
+        projectMetadata: {
+            projectName: document.getElementById("projectName").value,
+            version: document.getElementById("projectVersion").value,
+            author: document.getElementById("projectAuthor").value,
+            description: document.getElementById("projectDescription").value
+        },
+
+        aasProvider: {
+            serverUrl: document.getElementById("aasServerUrl").value,
+            authToken: document.getElementById("aasAuthToken").value,
+            pollingInterval: document.getElementById("aasPollingInterval").value
+        },
+
+        protocolDefaults: {
+            defaultSamplingRate: document.getElementById("defaultSamplingRate").value,
+            autoBindStrategy: document.getElementById("autoBindStrategy").value,
+            endianness: document.getElementById("endianness").value
+        },
+
+        interfaceUX: {
+            treeDepth: document.getElementById("treeDepth").value,
+            validationRules: document.getElementById("validationRules").value,
+            theme: document.getElementById("themeMode").value
+        },
+
+        exportSettings: {
+            yamlFormatting: document.getElementById("yamlFormatting").value,
+            includeComments: document.getElementById("includeComments").value,
+            outputDirectory: document.getElementById("outputDirectory").value
+        }
+    };
+
+    applyTheme(globalSettings.interfaceUX.theme);
+
+    closeSettingsModal();
+
+    setStatus("SUCCESS", "Settings saved");
+}
+
+function applyTheme(theme) {
+    if (theme === "dark") {
+        document.body.classList.add("dark-theme");
+    } else {
+        document.body.classList.remove("dark-theme");
     }
 }
+const helpButton = document.getElementById("helpButton");
+const helpModal = document.getElementById("helpModal");
+
+helpButton.addEventListener("click", function () {
+    helpModal.classList.remove("hidden");
+});
+
+function closeHelpModal() {
+    helpModal.classList.add("hidden");
+}
+
+helpModal.addEventListener("click", function(event) {
+    if (event.target === helpModal) {
+        closeHelpModal();
+    }
+});

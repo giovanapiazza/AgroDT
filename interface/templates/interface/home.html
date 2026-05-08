@@ -1,495 +1,632 @@
 {% load static %}
-
 <!DOCTYPE html>
-<html lang="en">
-
+<html lang="pt-br">
 <head>
-
     <meta charset="UTF-8">
-
     <title>AgroDT Translator Configurator</title>
-
-    <link rel="stylesheet"
-          href="{% static 'interface/css/style.css' %}">
-
+    <link rel="stylesheet" href="{% static 'interface/css/style.css' %}">
 </head>
-
 <body>
 
-<!-- ===================================== -->
-<!-- TOP BAR -->
-<!-- ===================================== -->
+<div class="app">
 
-<header class="topbar">
+    <header class="topbar">
+        <div class="brand">
+            <span class="brand-icon">◱</span>
+            <strong>AgroDT Translator Configurator</strong>
+        </div>
 
-    <div class="logo-area">
+        <nav class="menu">
+            <div class="file-menu-wrapper">
+                <button id="fileButton" class="file-button">File</button>
 
-        <div class="logo-square"></div>
+                <div id="fileDropdown" class="file-dropdown hidden">
+                    <button onclick="importAAS()">Import AAS...</button>
+                    <hr>
+                    <button onclick="openProject()">Open Project...</button>
+                    <button onclick="saveProject()">Save Project</button>
+                    <button onclick="saveProjectAs()">Save Project As...</button>
+                    <hr>
+                    <button onclick="closeProject()">Close Project</button>
+                    <hr>
+                    <button onclick="exitApp()">Exit</button>
+                </div>
+            </div>
 
-        <h1>AgroDT Translator Configurator</h1>
+            <button id="translatorButton">Translators</button>
+            <button id="exportButton">Export</button>
+            <button id="settingsButton">Settings</button>
+            <button id="helpButton">Help</button>
+        </nav>
+    </header>
 
+    <main class="main">
+
+        <section class="left-panel">
+            <div class="panel-header">Translator Configuration Panel</div>
+
+            <div id="initialMessage" class="center-message">
+                Load an AAS file to start configuring translators.
+            </div>
+
+            <div id="addTranslatorMessage" class="center-message hidden">
+                Add a translator to begin configuration.
+            </div>
+
+            <div id="translatorArea" class="translator-area hidden">
+
+                <div id="tabs" class="tabs"></div>
+
+                <!-- MQTT -->
+                <div id="mqttPanel" class="translator-panel hidden">
+
+                    <div class="translator-header">
+                        <h2>MQTT Translator</h2>
+                        <p><span class="dot warning"></span> Configuration in progress</p>
+                    </div>
+
+                    <div class="section">
+                        <h3>General Settings</h3>
+
+                        <div class="form-grid">
+                            <label>Broker Address<input placeholder="mqtt.example.com"></label>
+                            <label>Port<input value="1883"></label>
+                            <label>Username<input placeholder="username"></label>
+                            <label>Password<input type="password" placeholder="••••••••"></label>
+                            <label>Client ID<input placeholder="agrodt-translator-01"></label>
+                            <label>Topic Prefix<input placeholder="agrodt/"></label>
+
+                            <label>QoS
+                                <select>
+                                    <option>0 - At most once</option>
+                                    <option selected>1 - At least once</option>
+                                    <option>2 - Exactly once</option>
+                                </select>
+                            </label>
+
+                            <label>Keep Alive (seconds)<input value="60"></label>
+
+                            <label class="checkbox-label">
+                                <input type="checkbox"> Use TLS
+                            </label>
+                        </div>
+                    </div>
+
+                    <div class="section">
+                        <h3>Mappings</h3>
+
+                        <div class="form-grid">
+                            <label>Topic<input id="mqttTopic" placeholder="sensors/example"></label>
+                            <label>Field Name<input id="mqttField" placeholder="value"></label>
+
+                            <label>Data Type
+                                <select id="mqttDataType">
+                                    <option>String</option>
+                                    <option>Integer</option>
+                                    <option selected>Float</option>
+                                    <option>Boolean</option>
+                                    <option>JSON</option>
+                                </select>
+                            </label>
+
+                            <label>Selected AAS Property
+                                <input id="mqttAasProperty" readonly placeholder="Select from AAS tree →">
+                            </label>
+                        </div>
+
+                        <div class="actions">
+                            <button class="secondary">🔗 Bind to Selected Property</button>
+                            <button class="primary" onclick="addMQTTMapping()">＋ Add Mapping</button>
+                        </div>
+                    </div>
+
+                    <div class="section">
+                        <div class="section-header">
+                            <h3>Mappings Summary</h3>
+                            <div>
+                                <button class="secondary">⇧ Import Mappings</button>
+                                <button class="secondary">⇩ Export Mappings</button>
+                            </div>
+                        </div>
+
+                        <table>
+                            <thead>
+                            <tr>
+                                <th>Topic</th>
+                                <th>Field Name</th>
+                                <th>Data Type</th>
+                                <th>AAS Property</th>
+                                <th>Status</th>
+                                <th></th>
+                            </tr>
+                            </thead>
+                            <tbody id="mqttTable"></tbody>
+                        </table>
+                    </div>
+                </div>
+
+                <!-- MAVLINK -->
+                <div id="mavlinkPanel" class="translator-panel hidden">
+
+                    <div class="translator-header">
+                        <h2>MAVLink Translator</h2>
+                        <p><span class="dot warning"></span> Configuration in progress</p>
+                    </div>
+
+                    <div class="section">
+                        <h3>Connection</h3>
+
+                        <div class="form-grid">
+                            <label>Connection Type
+                                <select>
+                                    <option>TCP</option>
+                                    <option selected>UDP</option>
+                                    <option>Serial</option>
+                                </select>
+                            </label>
+
+                            <label>Host / IP Address<input value="127.0.0.1"></label>
+                            <label>Port<input value="14550"></label>
+
+                            <label>Baud Rate
+                                <select>
+                                    <option>9600</option>
+                                    <option selected>57600</option>
+                                    <option>115200</option>
+                                </select>
+                            </label>
+
+                            <label class="checkbox-label">
+                                <input type="checkbox" checked> Auto Connect
+                            </label>
+                        </div>
+                    </div>
+
+                    <div class="section">
+                        <h3>Identification</h3>
+
+                        <div class="form-grid">
+                            <label>System ID<input value="255"></label>
+                            <label>Component ID<input value="0"></label>
+                            <label>Target System ID<input value="1"></label>
+                            <label>Target Component ID<input value="1"></label>
+
+                            <label>Frame Version
+                                <select>
+                                    <option>MAVLink 1.0</option>
+                                    <option selected>MAVLink 2.0</option>
+                                </select>
+                            </label>
+                        </div>
+                    </div>
+
+                    <div class="section">
+                        <h3>Runtime</h3>
+
+                        <div class="form-grid">
+                            <label>Refresh Rate (Hz)<input value="10"></label>
+                            <label>Heartbeat Timeout (seconds)<input value="5"></label>
+                        </div>
+                    </div>
+
+                    <div class="section">
+                        <h3>Message Mapping</h3>
+
+                        <div class="form-grid">
+                            <label>MAVLink Message
+                                <select id="mavMessage">
+                                    <option>HEARTBEAT</option>
+                                    <option selected>GLOBAL_POSITION_INT</option>
+                                    <option>ATTITUDE</option>
+                                    <option>GPS_RAW_INT</option>
+                                    <option>BATTERY_STATUS</option>
+                                </select>
+                            </label>
+
+                            <label>MAVLink Field<input id="mavField" placeholder="lat, lon, alt..."></label>
+
+                            <label>Data Type
+                                <select id="mavDataType">
+                                    <option>Int8</option>
+                                    <option>Int16</option>
+                                    <option selected>Int32</option>
+                                    <option>Float</option>
+                                    <option>Double</option>
+                                </select>
+                            </label>
+
+                            <label>Selected AAS Property
+                                <input id="mavAasProperty" readonly placeholder="Select from AAS tree →">
+                            </label>
+                        </div>
+
+                        <div class="actions">
+                            <button class="secondary">🔗 Bind to Selected Property</button>
+                            <button class="primary" onclick="addMAVLinkMapping()">＋ Add Mapping</button>
+                        </div>
+                    </div>
+
+                    <div class="section">
+                        <h3>Mappings Summary</h3>
+
+                        <table>
+                            <thead>
+                            <tr>
+                                <th>MAVLink Message</th>
+                                <th>Field</th>
+                                <th>Data Type</th>
+                                <th>AAS Property</th>
+                                <th>Status</th>
+                                <th></th>
+                            </tr>
+                            </thead>
+                            <tbody id="mavlinkTable"></tbody>
+                        </table>
+                    </div>
+                </div>
+
+                <!-- MODBUS -->
+                <div id="modbusPanel" class="translator-panel hidden">
+
+                    <div class="translator-header">
+                        <h2>Modbus Translator</h2>
+                        <p><span class="dot warning"></span> Configuration in progress</p>
+                    </div>
+
+                    <div class="section">
+                        <h3>Connection Settings</h3>
+
+                        <div class="form-grid">
+                            <label>Connection Type
+                                <select>
+                                    <option selected>Modbus TCP</option>
+                                    <option>Modbus RTU</option>
+                                </select>
+                            </label>
+
+                            <label>Host / IP Address<input value="192.168.0.10"></label>
+                            <label>Port<input value="502"></label>
+                            <label>Unit ID<input value="1"></label>
+                            <label>Timeout (ms)<input value="1000"></label>
+                            <label>Polling Interval (ms)<input value="1000"></label>
+                        </div>
+                    </div>
+
+                    <div class="section">
+                        <h3>Register Mapping</h3>
+
+                        <div class="form-grid">
+                            <label>Register Type
+                                <select id="modbusRegisterType">
+                                    <option selected>Holding Register</option>
+                                    <option>Input Register</option>
+                                    <option>Coil</option>
+                                    <option>Discrete Input</option>
+                                </select>
+                            </label>
+
+                            <label>Address<input id="modbusAddress" placeholder="40001"></label>
+                            <label>Data Type
+                                <select id="modbusDataType">
+                                    <option>Int16</option>
+                                    <option selected>Float</option>
+                                    <option>Boolean</option>
+                                    <option>UInt16</option>
+                                </select>
+                            </label>
+
+                            <label>Selected AAS Property
+                                <input id="modbusAasProperty" readonly placeholder="Select from AAS tree →">
+                            </label>
+                        </div>
+
+                        <div class="actions">
+                            <button class="secondary">🔗 Bind to Selected Property</button>
+                            <button class="primary" onclick="addModbusMapping()">＋ Add Mapping</button>
+                        </div>
+                    </div>
+
+                    <div class="section">
+                        <h3>Mappings Summary</h3>
+
+                        <table>
+                            <thead>
+                            <tr>
+                                <th>Register Type</th>
+                                <th>Address</th>
+                                <th>Data Type</th>
+                                <th>AAS Property</th>
+                                <th>Status</th>
+                                <th></th>
+                            </tr>
+                            </thead>
+                            <tbody id="modbusTable"></tbody>
+                        </table>
+                    </div>
+                </div>
+
+            </div>
+        </section>
+
+        <aside class="right-panel">
+
+            <div class="aas-header">
+                <strong>AAS Tree</strong>
+                <span id="aasFileName"></span>
+            </div>
+
+            <div id="aasEmpty" class="center-message">
+                No AAS loaded
+            </div>
+
+            <div id="aasLoadedArea" class="aas-loaded hidden">
+
+                <div class="search-box">
+                    <span>⌕</span>
+                    <input id="aasSearchInput" type="text" placeholder="Search AAS elements...">
+                </div>
+
+                <div id="aasTree" class="aas-tree"></div>
+
+            </div>
+
+        </aside>
+
+    </main>
+
+    <footer class="statusbar">
+        <strong>STATUS:</strong>
+        <span>No AAS loaded</span>
+    </footer>
+
+</div>
+
+<!-- MODAL TRANSLATORS -->
+<div id="translatorModal" class="modal hidden">
+    <div class="modal-content large-modal">
+        <div class="modal-body">
+            <h2>Select Translators</h2>
+            <p>Choose the protocol translators you want to configure for this project.</p>
+        </div>
+
+        <div class="modal-options">
+            <label class="option-card">
+                <input class="translator-check" type="checkbox" value="Modbus" checked>
+                <span>Modbus</span>
+            </label>
+
+            <label class="option-card">
+                <input class="translator-check" type="checkbox" value="MQTT" checked>
+                <span>MQTT</span>
+            </label>
+
+            <label class="option-card">
+                <input class="translator-check" type="checkbox" value="MAVLink" checked>
+                <span>MAVLink</span>
+            </label>
+        </div>
+
+        <div class="modal-footer">
+            <button class="secondary-btn" onclick="closeTranslatorModal()">Cancel</button>
+            <button class="primary-btn" onclick="applyTranslators()">Apply</button>
+        </div>
     </div>
+</div>
 
-    <nav class="menu-bar">
-
-        <div class="menu-item">
-
-            <button onclick="toggleFileMenu()">
-                File
-            </button>
-
-        <div id="fileMenu"
-            class="dropdown hidden">
-
-            <div onclick="importAAS()">
-                Import AAS...
-            </div>
-
-            <div onclick="openProject()">
-                Open Project...
-            </div>
-
-            <div onclick="saveProject()">
-                Save Project
-            </div>
-
-            <div onclick="saveProjectAs()">
-                Save Project As...
-            </div>
-
-            <div onclick="closeProject()">
-                Close Project
-            </div>
-
-            <div onclick="exitApplication()">
-                Exit
-            </div>
-
+<!-- MODAL EXPORT -->
+<div id="exportModal" class="modal hidden">
+    <div class="modal-content export-modal">
+        <div class="modal-body">
+            <h2>Export Configuration Files</h2>
+            <p>Select which protocol configuration files should be exported.</p>
         </div>
 
+        <div class="modal-options">
+            <label class="radio-option">
+                <input type="radio" name="exportType" value="all" checked>
+                <span>Export all configured translators</span>
+            </label>
+
+            <label class="radio-option">
+                <input type="radio" name="exportType" value="selected">
+                <span>Export selected translators</span>
+            </label>
         </div>
 
-        <button onclick="openTranslatorModal()">
-            Translators
-        </button>
-
-        <button onclick="openExportModal()">
-            Export
-        </button>
-
-        <button>Settings</button>
-
-        <button>Help</button>
-
-    </nav>
-
-</header>
-
-<!-- ===================================== -->
-<!-- MAIN AREA -->
-<!-- ===================================== -->
-
-<main class="main-layout">
-
-    <!-- LEFT PANEL -->
-
-    <section class="left-panel">
-
-        <h2>Translator Configuration Panel</h2>
-
-        <!-- TABS -->
-
-        <div class="tabs">
-
-            <button class="tab">
-                Modbus
-            </button>
-
-            <button class="tab active">
-                MQTT
-            </button>
-
-            <button class="tab">
-                MAVLink
-            </button>
-
+        <div class="modal-footer">
+            <button class="secondary-btn" onclick="closeExportModal()">Cancel</button>
+            <button class="primary-btn" onclick="exportConfiguration()">Export</button>
         </div>
+    </div>
+</div>
 
-        <!-- MQTT -->
+<!-- MODAL HELP -->
+<div id="helpModal" class="modal hidden">
+    <div class="modal-content help-modal">
 
-        <div class="mqtt-container">
+        <div class="modal-body">
+            <h2>Help - How to use the interface</h2>
 
-            <h1>MQTT Translator</h1>
-
-            <p class="status">
-                Status: Configuration in progress
+            <p>
+                The AgroDT Translator Configurator is used to configure protocol
+                translators that convert MQTT, Modbus and MAVLink data into OPC UA.
             </p>
 
-            <!-- GENERAL SETTINGS -->
+            <p>
+                First, use <strong>File → Import AAS...</strong> to load an AAS file
+                in <strong>.json</strong> or <strong>.aasx</strong> format. After loading,
+                the AAS Tree will appear on the right side of the screen.
+            </p>
 
-            <div class="card">
+            <p>
+                Then, click <strong>Translators</strong> to choose which protocols
+                you want to configure. Each selected translator will appear as a tab
+                in the left panel.
+            </p>
 
-                <h3>A. General Settings</h3>
+            <p>
+                In each translator tab, configure the protocol settings and create
+                mappings between protocol fields and AAS properties. To map a value,
+                select an item in the AAS Tree and bind it to the selected protocol field.
+            </p>
 
-                <div class="form-grid">
-
-                    <div class="form-group">
-                        <label>Broker Address</label>
-                        <input type="text"
-                               placeholder="mqtt.example.com">
-                    </div>
-
-                    <div class="form-group">
-                        <label>Port</label>
-                        <input type="number"
-                               value="1883">
-                    </div>
-
-                    <div class="form-group">
-                        <label>Username</label>
-                        <input type="text">
-                    </div>
-
-                    <div class="form-group">
-                        <label>Password</label>
-                        <input type="password">
-                    </div>
-
-                    <div class="form-group">
-                        <label>Client ID</label>
-                        <input type="text"
-                               placeholder="Enter client ID">
-                    </div>
-
-                    <div class="form-group">
-                        <label>Topic Prefix</label>
-                        <input type="text"
-                               placeholder="Enter topic prefix">
-                    </div>
-
-                    <div class="form-group">
-                        <label>QoS</label>
-
-                        <select>
-                            <option>0</option>
-                            <option>1</option>
-                            <option>2</option>
-                        </select>
-                    </div>
-
-                    <div class="form-group">
-                        <label>Keep Alive</label>
-                        <input type="number"
-                               value="60">
-                    </div>
-
-                </div>
-
-                <div class="checkbox-row">
-
-                    <input type="checkbox">
-
-                    <span>Use TLS</span>
-
-                </div>
-
-            </div>
-
-            <!-- MAPPINGS -->
-
-            <div class="card">
-
-                <h3>B. Mappings</h3>
-
-                <div class="form-grid">
-
-                    <div class="form-group">
-                        <label>Topic</label>
-                        <input type="text"
-                               placeholder="e.g. sensors/temperature">
-                    </div>
-
-                    <div class="form-group">
-                        <label>Field Name</label>
-                        <input type="text"
-                               placeholder="e.g. temperature">
-                    </div>
-
-                    <div class="form-group">
-                        <label>Data Type</label>
-
-                        <select>
-                            <option>String</option>
-                            <option>Integer</option>
-                            <option>Float</option>
-                            <option>Boolean</option>
-                        </select>
-                    </div>
-
-                    <div class="form-group">
-                        <label>Selected AAS Property</label>
-                        <input type="text"
-                               placeholder="Select a property...">
-                    </div>
-
-                </div>
-
-                <div class="button-row">
-
-                    <button class="secondary-btn">
-                        Bind to Selected Property
-                    </button>
-
-                    <button class="primary-btn">
-                        Add Mapping
-                    </button>
-
-                </div>
-
-            </div>
-
-            <!-- TABLE -->
-
-            <div class="card">
-
-                <h3>C. Mappings Summary</h3>
-
-                <table>
-
-                    <thead>
-
-                    <tr>
-                        <th>Topic</th>
-                        <th>Field Name</th>
-                        <th>Data Type</th>
-                        <th>AAS Property</th>
-                        <th>Status</th>
-                    </tr>
-
-                    </thead>
-
-                    <tbody>
-
-                    <tr>
-                        <td>sensors/temperature</td>
-                        <td>temperature</td>
-                        <td>Float</td>
-                        <td>Asset/SubmodelA/Property1</td>
-                        <td class="green">Connected</td>
-                    </tr>
-
-                    <tr>
-                        <td>sensors/humidity</td>
-                        <td>humidity</td>
-                        <td>Float</td>
-                        <td>Asset/SubmodelA/Property2</td>
-                        <td class="orange">Pending</td>
-                    </tr>
-
-                    </tbody>
-
-                </table>
-
-            </div>
-
+            <p>
+                Use <strong>Export</strong> to generate the configuration files for
+                the selected translators. The status bar at the bottom shows success,
+                warning and error messages while you use the application.
+            </p>
         </div>
 
-    </section>
-
-    <!-- RIGHT PANEL -->
-
-    <aside class="right-panel">
-
-        <h2>AAS Tree</h2>
-
-        <input type="text"
-               class="search"
-               placeholder="Search AAS elements...">
-
-        <div class="tree">
-
-            <div class="tree-item bold">
-                ▼ Asset
-            </div>
-
-            <div class="tree-sub">
-
-                <div class="tree-item bold">
-                    ▼ Submodel A
-                </div>
-
-                <div class="tree-property available">
-                    ● Property 1 (Available)
-                </div>
-
-                <div class="tree-property selected">
-                    ● Property 2 (Selected)
-                </div>
-
-                <div class="tree-item bold">
-                    ▼ Submodel B
-                </div>
-
-                <div class="tree-property mapped">
-                    ● Property 3 (Mapped)
-                </div>
-
-                <div class="tree-property available">
-                    ● Property 4 (Available)
-                </div>
-
-            </div>
-
-        </div>
-
-    </aside>
-
-</main>
-
-<!-- ===================================== -->
-<!-- STATUS BAR -->
-<!-- ===================================== -->
-
-<footer class="status-bar">
-
-    <span class="status-label">
-        Status:
-    </span>
-
-    <span>
-        AAS loaded successfully
-    </span>
-
-</footer>
-
-<!-- ===================================== -->
-<!-- TRANSLATOR MODAL -->
-<!-- ===================================== -->
-
-<div id="translatorModal"
-     class="modal hidden">
-
-    <div class="modal-content">
-
-        <button class="close-btn"
-                onclick="closeTranslatorModal()">
-
-            ✕
-
-        </button>
-
-        <h2>Select Translators</h2>
-
-        <p>
-            Choose the protocol translators you want to configure.
-        </p>
-
-        <div class="checkbox-column">
-
-            <label><input type="checkbox" checked> Modbus</label>
-            <label><input type="checkbox" checked> MQTT</label>
-            <label><input type="checkbox"> MAVLink</label>
-
-        </div>
-
-        <div class="modal-buttons">
-
-            <button class="secondary-btn"
-                    onclick="closeTranslatorModal()">
-
-                Cancel
-
+        <div class="modal-footer">
+            <button class="primary-btn" onclick="closeHelpModal()">
+                Close
             </button>
-
-            <button class="primary-btn">
-                Apply
-            </button>
-
         </div>
 
     </div>
-
 </div>
 
-<!-- ===================================== -->
-<!-- EXPORT MODAL -->
-<!-- ===================================== -->
+<!-- MODAL SETTINGS -->
+<div id="settingsModal" class="modal hidden">
+    <div class="modal-content settings-modal">
 
-<div id="exportModal"
-     class="modal hidden">
+        <div class="modal-body">
+            <h2>Settings</h2>
+            <p>Configure global project preferences, AAS source, protocol defaults and export behavior.</p>
+        </div>
 
-    <div class="modal-content">
+        <div class="settings-content">
 
-        <button class="close-btn"
-                onclick="closeExportModal()">
+            <section class="settings-section">
+                <h3>1. Project Metadata</h3>
 
-            ✕
+                <div class="form-grid">
+                    <label>Project Name
+                        <input id="projectName" placeholder="Farm Asset / Mission Name">
+                    </label>
 
-        </button>
+                    <label>Version
+                        <input id="projectVersion" value="1.0.0">
+                    </label>
 
-        <h2>Export Configuration Files</h2>
+                    <label>Author / Engineer
+                        <input id="projectAuthor" placeholder="Engineer name">
+                    </label>
 
-        <p>
-            Select which protocol configuration files should be exported.
-        </p>
+                    <label>Description
+                        <textarea id="projectDescription" placeholder="Describe what this mapping does..."></textarea>
+                    </label>
+                </div>
+            </section>
 
-        <div class="checkbox-column">
+            <section class="settings-section">
+                <h3>2. AAS Provider Settings</h3>
 
-            <label>
-                <input type="radio"
-                       name="exportOption">
-                Export all configured translators
-            </label>
+                <div class="form-grid">
+                    <label>AAS Server URL
+                        <input id="aasServerUrl" placeholder="https://aas-server.example.com">
+                    </label>
 
-            <label>
-                <input type="radio"
-                       name="exportOption"
-                       checked>
-                Export selected translators
-            </label>
+                    <label>Auth Token
+                        <input id="aasAuthToken" type="password" placeholder="Private access token">
+                    </label>
+
+                    <label>Polling Interval
+                        <input id="aasPollingInterval" value="60">
+                    </label>
+                </div>
+            </section>
+
+            <section class="settings-section">
+                <h3>3. Global Protocol Defaults</h3>
+
+                <div class="form-grid">
+                    <label>Default Sampling Rate
+                        <input id="defaultSamplingRate" value="1000 ms">
+                    </label>
+
+                    <label>Auto-Bind Strategy
+                        <select id="autoBindStrategy">
+                            <option value="disabled">Disabled</option>
+                            <option value="property-name" selected>Use AAS property name</option>
+                            <option value="semantic-id">Use semantic ID</option>
+                        </select>
+                    </label>
+
+                    <label>Endianness
+                        <select id="endianness">
+                            <option value="little">Little Endian</option>
+                            <option value="big" selected>Big Endian</option>
+                        </select>
+                    </label>
+                </div>
+            </section>
+
+            <section class="settings-section">
+                <h3>4. Interface & UX</h3>
+
+                <div class="form-grid">
+                    <label>Tree Depth
+                        <select id="treeDepth">
+                            <option value="first-level" selected>First level only</option>
+                            <option value="expand-all">Expand all</option>
+                        </select>
+                    </label>
+
+                    <label>Validation Rules
+                        <select id="validationRules">
+                            <option value="enabled" selected>Enabled</option>
+                            <option value="disabled">Disabled</option>
+                        </select>
+                    </label>
+
+                    <label>Theme
+                        <select id="themeMode">
+                            <option value="light" selected>Light</option>
+                            <option value="dark">Dark</option>
+                        </select>
+                    </label>
+                </div>
+            </section>
+
+            <section class="settings-section">
+                <h3>5. Export Settings</h3>
+
+                <div class="form-grid">
+                    <label>YAML Formatting
+                        <select id="yamlFormatting">
+                            <option value="2">2 spaces</option>
+                            <option value="4" selected>4 spaces</option>
+                        </select>
+                    </label>
+
+                    <label>Include Comments
+                        <select id="includeComments">
+                            <option value="true" selected>Yes</option>
+                            <option value="false">No</option>
+                        </select>
+                    </label>
+
+                    <label>Output Directory
+                        <input id="outputDirectory" placeholder="./exports">
+                    </label>
+                </div>
+            </section>
 
         </div>
 
-        <div class="checkbox-column">
-
-            <label><input type="checkbox" checked> Modbus</label>
-            <label><input type="checkbox" checked> MQTT</label>
-            <label><input type="checkbox"> MAVLink</label>
-
-        </div>
-
-        <div class="modal-buttons">
-
-            <button class="secondary-btn"
-                    onclick="closeExportModal()">
-
-                Cancel
-
-            </button>
-
-            <button class="primary-btn">
-                Export
-            </button>
-
+        <div class="modal-footer">
+            <button class="secondary-btn" onclick="closeSettingsModal()">Cancel</button>
+            <button class="primary-btn" onclick="saveSettings()">Save Settings</button>
         </div>
 
     </div>
-
 </div>
-<!-- FILE INPUTS -->
 
-<input type="file"
-       id="aasFileInput"
-       accept=".json,.aasx"
-       hidden>
+<input id="aasInput" type="file" accept=".json,.aasx" hidden>
+<input id="projectInput" type="file" accept=".agrodt,.json" hidden>
 
-<input type="file"
-       id="projectFileInput"
-       accept=".agrodt,.json"
-       hidden>
-<script defer
-        src="{% static 'interface/js/main.js' %}">
-</script>
+<script src="{% static 'interface/js/main.js' %}"></script>
 
 </body>
 </html>
