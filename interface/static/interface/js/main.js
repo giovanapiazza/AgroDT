@@ -233,6 +233,7 @@ function closeExportModal() {
 // CLOSE MODALS CLICKING OUTSIDE
 // ======================================
 
+
 window.onclick = function(event){
 
     const translatorModal =
