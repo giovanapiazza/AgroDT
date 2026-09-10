@@ -1,0 +1,38 @@
+import streamlit as st
+from translator import TradutorDeCodigo
+
+st.set_page_config(page_title="AgroDT Translator", layout="wide")
+
+st.title("🤖 Tradutor AgroDT")
+st.markdown("Interface profissional para migração de código via LLM local.")
+
+# Sidebar de Configuração
+st.sidebar.header("⚙️ Configurações")
+modelo = st.sidebar.selectbox("Modelo", ["llama3", "mistral"])
+l_origem = st.sidebar.selectbox("Linguagem Origem", ["Python", "C++"])
+l_destino = st.sidebar.selectbox("Linguagem Destino", ["C++", "Python"])
+
+# Opções de Entrada
+input_mode = st.radio("Como deseja inserir o código?", ["Colar Código", "Upload de Arquivo"])
+
+tradutor = TradutorDeCodigo(modelo=modelo)
+
+if input_mode == "Colar Código":
+    codigo = st.text_area("Cole o código aqui:", height=200)
+    if st.button("Traduzir"):
+        if codigo:
+            with st.spinner("Traduzindo..."):
+                resultado = tradutor.traduzir(codigo, l_origem, l_destino)
+                st.code(resultado, language=l_destino.lower())
+        else:
+            st.warning("Insira o código.")
+
+else: # Upload de Arquivo
+    arquivo = st.file_uploader("Escolha um arquivo .py ou .cpp", type=['py', 'cpp'])
+    if arquivo and st.button("Traduzir Arquivo"):
+        codigo = arquivo.read().decode("utf-8")
+        with st.spinner("Processando arquivo..."):
+            resultado = tradutor.traduzir(codigo, l_origem, l_destino)
+            st.code(resultado, language=l_destino.lower())
+            st.download_button("Baixar código traduzido", resultado, file_name=f"traduzido_{arquivo.name}")
+

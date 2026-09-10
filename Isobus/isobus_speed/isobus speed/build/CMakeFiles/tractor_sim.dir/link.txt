@@ -1,0 +1,1 @@
+/usr/bin/c++ CMakeFiles/tractor_sim.dir/tractor_sim.cpp.o -o tractor_sim  AgIsoStack-build/isobus/libIsobus.a AgIsoStack-build/hardware_integration/libHardwareIntegration.a AgIsoStack-build/utility/libUtility.a AgIsoStack-build/isobus/libIsobus.a AgIsoStack-build/utility/libUtility.a 

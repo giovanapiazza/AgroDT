@@ -1,0 +1,21 @@
+px4:
+  version: "v1.17.0"
+  model: "gz_x500"
+  autostart: 4001
+  world: "AgrobotScene"
+
+spawn:
+  # X500 separado do Husky e acima do terreno.
+  x: 3.0
+  y: 0.0
+  z: 1.5
+  roll: 0.0
+  pitch: 0.0
+  yaw: 0.0
+
+dds:
+  port: 8888
+
+mission:
+  takeoff_height_m: 3.0
+  hover_seconds: 8.0

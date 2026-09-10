@@ -1,0 +1,4 @@
+{
+  "type": "object",
+  "required": ["seq", "ts_src", "latitude", "longitude", "altitude", "frame", "source"]
+}

@@ -1,0 +1,18 @@
+robot:
+  namespace: "a200_0000"
+  odometry_topic: "platform/odom"
+
+can:
+  interface: "vcan0"
+  priority: 3
+  pgn: "0xEF00"
+  source_address: 28
+  destination_address: 255
+
+  # Requisito da versão final: 10 Hz = 1 frame a cada 100 ms.
+  period_ms: 100
+  stale_timeout_s: 0.5
+
+  # Deadband para não classificar ruído numérico como movimento.
+  linear_threshold_mps: 0.02
+  angular_threshold_rps: 0.05

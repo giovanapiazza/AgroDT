@@ -1,0 +1,2 @@
+/usr/bin/ar qc libUtility.a CMakeFiles/Utility.dir/src/system_timing.cpp.o CMakeFiles/Utility.dir/src/processing_flags.cpp.o CMakeFiles/Utility.dir/src/iop_file_interface.cpp.o CMakeFiles/Utility.dir/src/platform_endianness.cpp.o CMakeFiles/Utility.dir/src/chrono_time_source.cpp.o
+/usr/bin/ranlib libUtility.a

@@ -1,0 +1,9 @@
+world:
+  name: "AgrobotScene"
+
+spawn:
+  # Posição inicial do Husky no AgrobotScene.
+  x: 0.0
+  y: 0.0
+  z: 0.50
+  yaw: 0.0

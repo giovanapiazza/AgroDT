@@ -1,0 +1,2 @@
+/usr/bin/ar qc libHardwareIntegration.a CMakeFiles/HardwareIntegration.dir/src/can_hardware_interface.cpp.o CMakeFiles/HardwareIntegration.dir/src/vector_asc_logger.cpp.o CMakeFiles/HardwareIntegration.dir/src/socket_can_interface.cpp.o
+/usr/bin/ranlib libHardwareIntegration.a

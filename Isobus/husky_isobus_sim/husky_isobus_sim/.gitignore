@@ -1,0 +1,16 @@
+ros2_ws/build/
+ros2_ws/install/
+ros2_ws/log/
+config/clearpath/platform/
+config/clearpath/sensors/
+config/clearpath/manipulators/
+__pycache__/
+*.pyc
+.pytest_cache/
+logs/
+
+# Downloaded/generated locally by setup_all.sh
+third_party/PX4-Autopilot/
+third_party/Micro-XRCE-DDS-Agent/
+ros2_ws/src/px4_msgs/
+.runtime/

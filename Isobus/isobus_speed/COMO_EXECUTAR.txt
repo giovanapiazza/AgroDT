@@ -1,0 +1,219 @@
+============================================================
+COMO EXECUTAR O SIMULADOR ISOBUS SPEED
+============================================================
+
+Este projeto simula duas ECUs ISOBUS em uma rede CAN virtual:
+
+1. tractor_sim  -> Tractor ECU, envia velocidade e distância.
+2. sprayer_sim  -> Pulverizador, recebe a velocidade do trator.
+
+O projeto foi preparado para Ubuntu/Linux e utiliza a AgIsoStack++.
+
+------------------------------------------------------------
+1. INSTALAR OS PROGRAMAS NECESSÁRIOS
+------------------------------------------------------------
+
+Abra um terminal e execute:
+
+sudo apt update
+sudo apt install -y build-essential cmake git can-utils iproute2
+
+------------------------------------------------------------
+2. ORGANIZAR AS PASTAS
+------------------------------------------------------------
+
+A forma mais simples é deixar as duas pastas lado a lado:
+
+Isobus/
+├── AgIsoStack-plus-plus/
+└── isobus speed/
+
+Exemplo de caminho da AgIsoStack++:
+
+/home/seu_usuario/AgroDT/Isobus/AgIsoStack-plus-plus
+
+Exemplo de caminho deste projeto:
+
+/home/seu_usuario/AgroDT/Isobus/isobus speed
+
+Caso ainda não tenha a AgIsoStack++, clone com:
+
+git clone https://github.com/Open-Agriculture/AgIsoStack-plus-plus.git
+
+------------------------------------------------------------
+3. ENTRAR NA PASTA DO PROJETO
+------------------------------------------------------------
+
+Como o nome da pasta possui espaço, use aspas:
+
+cd "/home/seu_usuario/AgroDT/Isobus/isobus speed"
+
+Troque o caminho acima pelo caminho real do seu computador.
+
+------------------------------------------------------------
+4. DAR PERMISSÃO AOS SCRIPTS
+------------------------------------------------------------
+
+Execute uma vez:
+
+chmod +x build_demo.sh setup_can.sh monitor_can.sh test_decoder.sh
+chmod +x decode_machine_selected_speed.py
+
+------------------------------------------------------------
+5. CRIAR A REDE CAN VIRTUAL
+------------------------------------------------------------
+
+Execute:
+
+./setup_can.sh
+
+O script criará e ativará a interface virtual can0.
+
+Para confirmar:
+
+ip -details link show can0
+
+------------------------------------------------------------
+6. COMPILAR O PROJETO
+------------------------------------------------------------
+
+Se a pasta AgIsoStack-plus-plus estiver ao lado de "isobus speed":
+
+./build_demo.sh
+
+Caso a AgIsoStack++ esteja em outro caminho:
+
+AGISOSTACK_DIR=/caminho/para/AgIsoStack-plus-plus ./build_demo.sh
+
+Exemplo:
+
+AGISOSTACK_DIR=/home/seu_usuario/AgroDT/Isobus/AgIsoStack-plus-plus ./build_demo.sh
+
+Depois da compilação, serão criados:
+
+build/tractor_sim
+build/sprayer_sim
+
+------------------------------------------------------------
+7. EXECUTAR A DEMONSTRAÇÃO
+------------------------------------------------------------
+
+Abra três terminais.
+
+TERMINAL 1 - PULVERIZADOR
+
+cd "/caminho/para/isobus speed"
+export ISOBUS_CAN_INTERFACE=can0
+./build/sprayer_sim
+
+TERMINAL 2 - TRATOR
+
+cd "/caminho/para/isobus speed"
+export ISOBUS_CAN_INTERFACE=can0
+./build/tractor_sim
+
+No terminal do trator, digite velocidades em km/h, por exemplo:
+
+0
+4
+8
+12
+20
+-5
+
+Valores positivos representam movimento para frente.
+Valores negativos representam marcha a ré.
+
+TERMINAL 3 - MONITOR CAN
+
+cd "/caminho/para/isobus speed"
+./monitor_can.sh
+
+O monitor deverá mostrar quadros com o PGN 61474, normalmente com
+identificador semelhante a:
+
+0CF022F0
+
+------------------------------------------------------------
+8. TESTAR O DECODIFICADOR
+------------------------------------------------------------
+
+Execute:
+
+./test_decoder.sh
+
+Também é possível decodificar uma mensagem manualmente:
+
+./decode_machine_selected_speed.py AE 08 A0 86 01 00 C0 11
+
+Essa mensagem representa aproximadamente:
+
+- Velocidade: 8 km/h
+- Distância: 100 m
+- Direção: para frente
+- Fonte: velocidade simulada
+- Limitação: não limitada
+
+------------------------------------------------------------
+9. ENCERRAR
+------------------------------------------------------------
+
+Para fechar os simuladores, pressione:
+
+Ctrl + C
+
+A interface CAN virtual pode permanecer ativa. Para removê-la:
+
+sudo ip link delete can0
+
+------------------------------------------------------------
+ERROS COMUNS
+------------------------------------------------------------
+
+ERRO: AgIsoStack-plus-plus não encontrada
+
+Informe o caminho ao compilar:
+
+AGISOSTACK_DIR=/caminho/AgIsoStack-plus-plus ./build_demo.sh
+
+ERRO: Permission denied
+
+Execute:
+
+chmod +x *.sh decode_machine_selected_speed.py
+
+ERRO: Cannot find device can0
+
+Execute novamente:
+
+./setup_can.sh
+
+ERRO: RTNETLINK answers: Operation not permitted
+
+Execute o script com um usuário que tenha sudo configurado:
+
+sudo ./setup_can.sh
+
+ERRO: executável não encontrado em build/
+
+A compilação não terminou corretamente. Apague a pasta build e compile de novo:
+
+rm -rf build
+./build_demo.sh
+
+============================================================
+RESUMO RÁPIDO
+============================================================
+
+cd "/caminho/para/isobus speed"
+chmod +x *.sh decode_machine_selected_speed.py
+./setup_can.sh
+./build_demo.sh
+
+Depois, em terminais separados:
+
+./build/sprayer_sim
+./build/tractor_sim
+./monitor_can.sh
+
+============================================================
