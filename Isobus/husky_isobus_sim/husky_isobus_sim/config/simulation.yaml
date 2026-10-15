@@ -1,9 +1,10 @@
 world:
-  name: "AgrobotScene"
+  name: "AgroDTField"
+  file: "worlds/AgroDTField.sdf"
 
-spawn:
-  # Posição inicial do Husky no AgrobotScene.
-  x: 0.0
-  y: 0.0
-  z: 0.50
-  yaw: 0.0
+husky:
+  spawn:
+    x: -10.0
+    y: 5.0
+    z: 0.50
+    yaw: 0.0
