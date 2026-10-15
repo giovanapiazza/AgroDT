@@ -4,7 +4,7 @@ package_name = 'drone_offboard'
 
 setup(
     name=package_name,
-    version='0.1.0',
+    version='0.2.0',
     packages=find_packages(exclude=['test']),
     data_files=[
         ('share/ament_index/resource_index/packages', ['resource/' + package_name]),
@@ -14,11 +14,11 @@ setup(
     zip_safe=True,
     maintainer='AgroDT',
     maintainer_email='research@example.invalid',
-    description='PX4 X500 offboard demo for AgrobotScene.',
+    description='Executor de missões PX4 X500 para o simulador agrícola AgroDT.',
     license='Apache-2.0',
     entry_points={
         'console_scripts': [
-            'offboard_demo = drone_offboard.offboard_demo:main',
+            'mission_executor = drone_offboard.mission_executor:main',
         ],
     },
 )
