@@ -1,291 +1,210 @@
-# Husky, ISOBUS e drone PX4
+# AgroDT — Gazebo, Husky, ISOBUS e drone PX4
 
-Este guia corresponde à versão dos comandos em Python, preparada para:
+Simulação preparada para Ubuntu 24.04, ROS 2 Jazzy e Gazebo Harmonic.
 
-- Ubuntu 24.04;
-- ROS 2 Jazzy;
-- Gazebo Harmonic;
-- Husky A200 da Clearpath;
-- SocketCAN `vcan0`;
-- PX4 v1.17.0 e drone X500.
+A inicialização foi desacoplada:
 
-## 1. Estrutura esperada
+- **Gazebo** abre sozinho e já carrega o campo com 3 fileiras de milho;
+- **Husky A200** é inserido apenas quando `start_husky.py` é executado;
+- **PX4 X500** é inserido apenas quando `start_drone.py` é executado;
+- o **executor de missões** recebe JSON por ROS 2 e envia `TrajectorySetpoint` ao PX4.
 
-Execute os comandos dentro da pasta que contém diretamente `config`,
-`ros2_ws`, `scripts` e `third_party`:
+## Estrutura principal
 
 ```text
-husky_isobus_sim/
-├── config/
-├── ros2_ws/
-├── scripts/
-├── third_party/
-└── COMO_USAR_COMPLETO.md
+config/
+  simulation.yaml
+  drone.yaml
+  mission_test.json
+worlds/
+  AgroDTField.sdf
+ros2_ws/src/
+  drone_offboard/
+  husky_isobus_bridge/
+scripts/
+  start_simulation.py
+  start_husky.py
+  start_drone.py
+  start_drone_mission.py
+  send_drone_mission.py
+  start_bridge.py
+  monitor_vcan.py
+  stop_all.py
 ```
 
-No seu computador, confirme a pasta com:
+## 1. Primeira preparação
 
-```bash
-cd /home/giovana-piazza/AgroDT/Isobus/husky_isobus_sim/husky_isobus_sim
-pwd
-ls
-```
-
-Não execute os programas de dentro da pasta `scripts`.
-
-## 2. Preparação inicial
-
-Verifique as dependências:
+Dentro da pasta que contém `config`, `worlds`, `ros2_ws` e `scripts`:
 
 ```bash
 python3 scripts/preflight.py
-```
-
-Na primeira instalação, execute uma vez:
-
-```bash
 python3 scripts/setup_all.py
 ```
 
-Esse processo instala as dependências, prepara o PX4, compila o workspace ROS
-e mantém os resultados nas pastas `third_party` e `ros2_ws/install`.
-
-Depois de concluído, normalmente não será necessário executar o setup novamente.
-
-## 3. Iniciar o Husky no Gazebo
-
-Feche simulações anteriores:
+Depois de alterações no pacote ROS 2:
 
 ```bash
-python3 scripts/stop_all.py
+python3 scripts/build.py
 ```
 
-No Terminal 1:
+## 2. Abrir apenas o Gazebo
+
+Terminal 1:
 
 ```bash
 python3 scripts/start_simulation.py
 ```
 
-Espere aparecer:
+O mundo `AgroDTField` abre com chão agrícola e **3 fileiras de milho, 7 plantas por fileira**.
 
-```text
-[OK] mundo 'AgrobotScene' carregado.
-[OK] controller_manager encontrado.
-[OK] AGROBOTSCENE + HUSKY PRONTOS
-```
+Esse comando não inicia Husky nem drone.
 
-Mantenha o Terminal 1 aberto.
+## 3. Inserir o Husky separadamente
 
-## 4. Abrir a barra lateral de controle no Gazebo
-
-O programa carrega a configuração gráfica da Clearpath e configura o painel
-`Teleop` para publicar em:
-
-```text
-/a200_0000/cmd_vel
-```
-
-### Se o painel já estiver visível
-
-Procure, normalmente no lado direito da janela, o painel chamado **Teleop**.
-Use os botões direcionais para:
-
-- avançar;
-- recuar;
-- virar à esquerda;
-- virar à direita;
-- parar.
-
-Comece com velocidades pequenas, por exemplo `0.3 m/s` linear e `0.5 rad/s`
-angular.
-
-### Se a barra lateral estiver fechada
-
-1. Na janela do Gazebo, vá ao canto superior direito.
-2. Clique no menu de plugins — o ícone pode aparecer como três pontos ou como
-   um menu suspenso, dependendo do tema.
-3. Procure **Teleop**.
-4. Clique em **Teleop** para adicionar ou reabrir o painel lateral.
-5. Confirme que o tópico exibido é `/a200_0000/cmd_vel`.
-
-O Gazebo permite adicionar painéis pelo menu de plugins no canto superior
-direito. Se o painel for fechado pelo `X`, ele pode ser adicionado novamente
-pelo mesmo menu.
-
-### Se Teleop não aparecer na lista
-
-Feche tudo:
+Com o Gazebo já aberto:
 
 ```bash
-python3 scripts/stop_all.py
+python3 scripts/start_husky.py
 ```
 
-Confirme que a configuração gráfica foi gerada:
-
-```bash
-ls .runtime/gui_agrobot_scene.config
-grep -A 12 -B 2 'filename="Teleop"' .runtime/gui_agrobot_scene.config
-```
-
-Inicie novamente:
-
-```bash
-python3 scripts/start_simulation.py
-```
-
-## 5. Controle manual alternativo pelo terminal
-
-Se o painel Teleop não funcionar, controle o Husky por um segundo terminal.
-
-Avançar:
-
-```bash
-source /opt/ros/jazzy/setup.bash
-source ros2_ws/install/setup.bash
-
-ros2 topic pub /a200_0000/cmd_vel \
-  geometry_msgs/msg/TwistStamped \
-  '{"twist":{"linear":{"x":0.3},"angular":{"z":0.0}}}' \
-  -r 20
-```
-
-Pare o comando contínuo com `Ctrl+C` e envie velocidade zero:
-
-```bash
-ros2 topic pub --once /a200_0000/cmd_vel \
-  geometry_msgs/msg/TwistStamped \
-  '{"twist":{"linear":{"x":0.0},"angular":{"z":0.0}}}'
-```
-
-Valores de referência:
-
-| Movimento | `linear.x` | `angular.z` |
-|---|---:|---:|
-| Frente | `+0.3` | `0.0` |
-| Ré | `-0.3` | `0.0` |
-| Esquerda | `0.0` | `+0.5` |
-| Direita | `0.0` | `-0.5` |
-| Parar | `0.0` | `0.0` |
-
-## 6. Conferir se o Husky realmente se moveu
-
-Em outro terminal:
-
-```bash
-source /opt/ros/jazzy/setup.bash
-source ros2_ws/install/setup.bash
-ros2 topic echo /a200_0000/platform/odom --field twist.twist
-```
-
-O teste passou quando:
-
-1. o Husky se move visualmente no Gazebo;
-2. `/a200_0000/platform/odom` possui publicador;
-3. `linear.x` ou `angular.z` muda durante o movimento.
-
-## 7. Iniciar a comunicação Husky → vCAN
-
-Crie a interface virtual uma vez após cada reinicialização do Ubuntu:
+Para usar ISOBUS/vCAN:
 
 ```bash
 sudo python3 scripts/setup_vcan.py
-```
-
-No Terminal 2:
-
-```bash
 python3 scripts/start_bridge.py
-```
-
-No Terminal 3:
-
-```bash
 python3 scripts/monitor_vcan.py
 ```
 
-O monitor deve mostrar o movimento decodificado, CAN ID, PGN, velocidades e
-payload recebido da `vcan0`.
+## 4. Inserir o drone separadamente
 
-## 8. Iniciar o drone X500
-
-O mundo e o Husky precisam estar ativos primeiro.
-
-No Terminal 4:
+Com o Gazebo já aberto:
 
 ```bash
 python3 scripts/start_drone.py
 ```
 
-O esperado é:
+O script inicia o Micro XRCE-DDS Agent quando necessário e conecta o PX4 SITL ao X500 no mundo já aberto.
 
-```text
-[1/3] Iniciando Micro XRCE-DDS Agent UDP 8888...
-[2/3] Iniciando PX4 v1.17.0...
-[3/3] PX4 + DDS conectados.
-[OK] DRONE X500 PRONTO
-```
+## 5. Iniciar o receptor de missões
 
-O programa mostra atualizações enquanto aguarda o DDS. Se o PX4 encerrar, as
-últimas linhas de `.runtime/px4.log` são mostradas automaticamente.
-
-## 9. Fazer o drone decolar
-
-No Terminal 5:
+Em outro terminal:
 
 ```bash
 python3 scripts/start_drone_mission.py
 ```
 
-A missão faz o X500 subir até a altura configurada em `config/drone.yaml`,
-pairar e pousar.
+Ele assina:
 
-## 10. Diagnóstico geral
+```text
+/agrodt/drone/mission
+```
+
+e publica progresso em:
+
+```text
+/agrodt/drone/mission_status
+```
+
+## 6. Enviar a missão de teste
+
+Em outro terminal:
+
+```bash
+python3 scripts/send_drone_mission.py config/mission_test.json
+```
+
+A missão de exemplo sobe o X500 e faz uma varredura em zigue-zague sobre as três fileiras, aproximadamente 4 m acima da origem local, e ao terminar solicita pouso.
+
+Os waypoints usam o frame local NED do PX4:
+
+- `x` e `y`: posição local em metros;
+- `z` negativo: altura acima da origem;
+- `yaw`: orientação em radianos.
+
+Como o X500 é criado no lado sudoeste do campo, os waypoints do arquivo de teste foram escolhidos para coincidir visualmente com as três fileiras.
+
+## 7. Formato da missão
+
+```json
+{
+  "version": 1,
+  "type": "mission.upload",
+  "mission_id": 1,
+  "device": {
+    "id": "uav-01",
+    "frame": "LOCAL_NED"
+  },
+  "payload": {
+    "command": "start_mission",
+    "tolerance_m": 0.6,
+    "hold_seconds": 1.0,
+    "auto_land": true,
+    "waypoints": [
+      {"x": 0.0, "y": 0.0, "z": -4.0, "yaw": 0.0},
+      {"x": 2.0, "y": 1.5, "z": -4.0, "yaw": 0.0}
+    ]
+  }
+}
+```
+
+## 8. Status da missão
+
+O executor publica mensagens JSON como:
+
+```json
+{"mission_id":1,"status":"accepted","waypoint_count":7}
+{"mission_id":1,"status":"started"}
+{"mission_id":1,"status":"waypoint_reached","waypoint":1}
+{"mission_id":1,"status":"landing"}
+{"mission_id":1,"status":"completed","command":"end_mission"}
+```
+
+Para observar:
+
+```bash
+source /opt/ros/jazzy/setup.bash
+source ros2_ws/install/setup.bash
+ros2 topic echo /agrodt/drone/mission_status
+```
+
+## 9. Diagnóstico
 
 ```bash
 python3 scripts/check_all.py
 ```
 
-Logs importantes:
+Cada componente pode aparecer como ativo ou não iniciado, pois Gazebo, Husky e drone são independentes.
+
+Logs:
 
 ```text
 .runtime/gazebo.log
-.runtime/husky_spawn.log
 .runtime/clock.log
+.runtime/husky_spawn.log
 .runtime/px4.log
 .runtime/dds_agent.log
 ```
 
-Se aparecer `[ERRO] /clock indisponível`, a versão atual detecta
-automaticamente tanto `/clock` quanto `/world/AgrobotScene/clock` no Gazebo e
-mostra o log da ponte caso ela não consiga iniciar.
-
-Para acompanhar o PX4 em tempo real:
-
-```bash
-tail -f .runtime/px4.log
-```
-
-## 11. Encerrar a simulação
+## 10. Encerrar
 
 ```bash
 python3 scripts/stop_all.py
 ```
 
-Execute esse comando antes de iniciar uma nova simulação, especialmente se o
-Gazebo informar que já existe um mundo ativo.
-
-## 12. Ordem resumida dos terminais
-
-| Terminal | Comando |
-|---|---|
-| 1 | `python3 scripts/start_simulation.py` |
-| 2 | `python3 scripts/start_bridge.py` |
-| 3 | `python3 scripts/monitor_vcan.py` |
-| 4 | `python3 scripts/start_drone.py` |
-| 5 | `python3 scripts/start_drone_mission.py` |
-
-Antes dos Terminais 2 e 3, crie a `vcan0` com:
+## Ordem recomendada para demonstração com drone
 
 ```bash
-sudo python3 scripts/setup_vcan.py
+# Terminal 1
+python3 scripts/start_simulation.py
+
+# Terminal 2
+python3 scripts/start_drone.py
+
+# Terminal 3
+python3 scripts/start_drone_mission.py
+
+# Terminal 4
+python3 scripts/send_drone_mission.py config/mission_test.json
 ```
+
+O Husky é opcional e pode ser iniciado em outro terminal, depois do Gazebo.
