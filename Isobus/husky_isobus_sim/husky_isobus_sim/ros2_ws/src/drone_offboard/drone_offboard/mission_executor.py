@@ -1,0 +1,262 @@
+#!/usr/bin/env python3
+"""Executa missões JSON de waypoints em um PX4 X500 via ROS 2 Offboard."""
+
+import json
+import math
+import time
+
+import rclpy
+from rclpy.node import Node
+from rclpy.qos import QoSProfile, ReliabilityPolicy, HistoryPolicy, DurabilityPolicy
+
+from std_msgs.msg import String
+from px4_msgs.msg import OffboardControlMode, TrajectorySetpoint, VehicleCommand
+from px4_msgs.msg import VehicleLocalPosition, VehicleStatus
+
+
+def px4_topic(base_topic, msg_type):
+    version = int(getattr(msg_type, "MESSAGE_VERSION", 0))
+    return f"{base_topic}_v{version}" if version > 0 else base_topic
+
+
+class MissionExecutor(Node):
+    def __init__(self):
+        super().__init__("agrodt_drone_mission_executor")
+
+        qos = QoSProfile(
+            reliability=ReliabilityPolicy.BEST_EFFORT,
+            durability=DurabilityPolicy.TRANSIENT_LOCAL,
+            history=HistoryPolicy.KEEP_LAST,
+            depth=1,
+        )
+
+        self.offboard_pub = self.create_publisher(
+            OffboardControlMode, "/fmu/in/offboard_control_mode", qos)
+        self.trajectory_pub = self.create_publisher(
+            TrajectorySetpoint, "/fmu/in/trajectory_setpoint", qos)
+        self.command_pub = self.create_publisher(
+            VehicleCommand, "/fmu/in/vehicle_command", qos)
+
+        self.create_subscription(
+            VehicleLocalPosition,
+            px4_topic("/fmu/out/vehicle_local_position", VehicleLocalPosition),
+            self._position_cb,
+            qos,
+        )
+        self.create_subscription(
+            VehicleStatus,
+            px4_topic("/fmu/out/vehicle_status", VehicleStatus),
+            self._status_cb,
+            qos,
+        )
+        self.create_subscription(
+            String, "/agrodt/drone/mission", self._mission_cb, 10)
+
+        self.status_pub = self.create_publisher(
+            String, "/agrodt/drone/mission_status", 10)
+
+        self.position = None
+        self.vehicle_status = None
+        self.mission_id = None
+        self.waypoints = []
+        self.current_index = 0
+        self.tolerance = 0.6
+        self.hold_seconds = 1.0
+        self.auto_land = True
+        self.state = "IDLE"
+        self.prestream_count = 0
+        self.reached_since = None
+        self.land_sent_at = None
+
+        self.create_timer(0.1, self._tick)
+        self.get_logger().info(
+            "Executor pronto. Aguardando JSON em /agrodt/drone/mission")
+
+    def _timestamp_us(self):
+        return int(self.get_clock().now().nanoseconds / 1000)
+
+    def _position_cb(self, msg):
+        self.position = msg
+
+    def _status_cb(self, msg):
+        self.vehicle_status = msg
+
+    def _publish_status(self, status, **extra):
+        payload = {"mission_id": self.mission_id, "status": status, **extra}
+        if status == "completed":
+            payload["command"] = "end_mission"
+        msg = String()
+        msg.data = json.dumps(payload, separators=(",", ":"))
+        self.status_pub.publish(msg)
+        self.get_logger().info(msg.data)
+
+    def _mission_cb(self, msg):
+        if self.state not in ("IDLE", "COMPLETED"):
+            self._publish_status("rejected", reason="mission_already_running")
+            return
+        try:
+            data = json.loads(msg.data)
+            payload = data.get("payload", {})
+            if payload.get("command") != "start_mission":
+                raise ValueError("payload.command deve ser start_mission")
+            raw_waypoints = payload.get("waypoints", [])
+            if not raw_waypoints:
+                raise ValueError("a missão não possui waypoints")
+
+            self.waypoints = [
+                {
+                    "x": float(wp["x"]),
+                    "y": float(wp["y"]),
+                    "z": float(wp["z"]),
+                    "yaw": float(wp.get("yaw", 0.0)),
+                }
+                for wp in raw_waypoints
+            ]
+            self.mission_id = data.get("mission_id", 0)
+            self.tolerance = float(payload.get("tolerance_m", 0.6))
+            self.hold_seconds = float(payload.get("hold_seconds", 1.0))
+            self.auto_land = bool(payload.get("auto_land", True))
+            self.current_index = 0
+            self.prestream_count = 0
+            self.reached_since = None
+            self.land_sent_at = None
+            self.state = "PRESTREAM"
+            self._publish_status("accepted", waypoint_count=len(self.waypoints))
+        except Exception as exc:
+            self._publish_status("rejected", reason=str(exc))
+
+    def _heartbeat(self):
+        msg = OffboardControlMode()
+        msg.position = True
+        msg.velocity = False
+        msg.acceleration = False
+        msg.attitude = False
+        msg.body_rate = False
+        msg.timestamp = self._timestamp_us()
+        self.offboard_pub.publish(msg)
+
+    def _setpoint(self, waypoint):
+        msg = TrajectorySetpoint()
+        msg.position = [
+            float(waypoint["x"]),
+            float(waypoint["y"]),
+            float(waypoint["z"]),
+        ]
+        msg.yaw = float(waypoint.get("yaw", 0.0))
+        msg.timestamp = self._timestamp_us()
+        self.trajectory_pub.publish(msg)
+
+    def _vehicle_command(self, command, param1=0.0, param2=0.0):
+        msg = VehicleCommand()
+        msg.command = int(command)
+        msg.param1 = float(param1)
+        msg.param2 = float(param2)
+        msg.target_system = 1
+        msg.target_component = 1
+        msg.source_system = 1
+        msg.source_component = 1
+        msg.from_external = True
+        msg.timestamp = self._timestamp_us()
+        self.command_pub.publish(msg)
+
+    def _arm_and_offboard(self):
+        self._vehicle_command(
+            VehicleCommand.VEHICLE_CMD_DO_SET_MODE, 1.0, 6.0)
+        self._vehicle_command(
+            VehicleCommand.VEHICLE_CMD_COMPONENT_ARM_DISARM, 1.0)
+        self._publish_status("started")
+
+    def _distance_to(self, wp):
+        if self.position is None:
+            return math.inf
+        coords = (
+            float(self.position.x),
+            float(self.position.y),
+            float(self.position.z),
+        )
+        if not all(math.isfinite(v) for v in coords):
+            return math.inf
+        return math.sqrt(
+            (coords[0] - wp["x"]) ** 2
+            + (coords[1] - wp["y"]) ** 2
+            + (coords[2] - wp["z"]) ** 2
+        )
+
+    def _start_land(self):
+        self._vehicle_command(VehicleCommand.VEHICLE_CMD_NAV_LAND)
+        self.land_sent_at = time.monotonic()
+        self.state = "LANDING"
+        self._publish_status("landing")
+
+    def _complete(self):
+        self._vehicle_command(
+            VehicleCommand.VEHICLE_CMD_COMPONENT_ARM_DISARM, 0.0)
+        self.state = "COMPLETED"
+        self._publish_status("completed")
+
+    def _tick(self):
+        if self.state in ("IDLE", "COMPLETED") or not self.waypoints:
+            return
+
+        if self.state in ("PRESTREAM", "ACTIVE"):
+            self._heartbeat()
+            self._setpoint(self.waypoints[self.current_index])
+
+        if self.state == "PRESTREAM":
+            self.prestream_count += 1
+            if self.prestream_count >= 15:
+                self._arm_and_offboard()
+                self.state = "ACTIVE"
+            return
+
+        if self.state == "ACTIVE":
+            current = self.waypoints[self.current_index]
+            distance = self._distance_to(current)
+            if distance <= self.tolerance:
+                if self.reached_since is None:
+                    self.reached_since = time.monotonic()
+                elif time.monotonic() - self.reached_since >= self.hold_seconds:
+                    reached = self.current_index
+                    self._publish_status(
+                        "waypoint_reached",
+                        waypoint=reached + 1,
+                        waypoint_count=len(self.waypoints),
+                        distance_m=round(distance, 3),
+                    )
+                    self.current_index += 1
+                    self.reached_since = None
+                    if self.current_index >= len(self.waypoints):
+                        if self.auto_land:
+                            self._start_land()
+                        else:
+                            self.state = "COMPLETED"
+                            self._publish_status("completed")
+            else:
+                self.reached_since = None
+            return
+
+        if self.state == "LANDING":
+            if self.position is not None:
+                z = float(self.position.z)
+                if math.isfinite(z) and z > -0.35:
+                    self._complete()
+                    return
+            if self.land_sent_at and time.monotonic() - self.land_sent_at > 20.0:
+                self._complete()
+
+
+def main(args=None):
+    rclpy.init(args=args)
+    node = MissionExecutor()
+    try:
+        rclpy.spin(node)
+    except KeyboardInterrupt:
+        pass
+    finally:
+        if rclpy.ok():
+            node.destroy_node()
+            rclpy.shutdown()
+
+
+if __name__ == "__main__":
+    main()
