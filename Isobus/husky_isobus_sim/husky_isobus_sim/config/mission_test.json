@@ -1,0 +1,59 @@
+{
+  "version": 1,
+  "type": "mission.upload",
+  "mission_id": 1,
+  "device": {
+    "id": "uav-01",
+    "frame": "LOCAL_NED"
+  },
+  "payload": {
+    "command": "start_mission",
+    "tolerance_m": 0.6,
+    "hold_seconds": 1,
+    "auto_land": true,
+    "waypoints": [
+      {
+        "x": 0,
+        "y": 0,
+        "z": -4,
+        "yaw": 0
+      },
+      {
+        "x": 2,
+        "y": 1.5,
+        "z": -4,
+        "yaw": 0
+      },
+      {
+        "x": 14,
+        "y": 1.5,
+        "z": -4,
+        "yaw": 0
+      },
+      {
+        "x": 14,
+        "y": 4,
+        "z": -4,
+        "yaw": 3.1416
+      },
+      {
+        "x": 2,
+        "y": 4,
+        "z": -4,
+        "yaw": 3.1416
+      },
+      {
+        "x": 2,
+        "y": 6.5,
+        "z": -4,
+        "yaw": 0
+      },
+      {
+        "x": 14,
+        "y": 6.5,
+        "z": -4,
+        "yaw": 0
+      }
+    ]
+  }
+}
