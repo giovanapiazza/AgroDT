@@ -1,63 +1,52 @@
 # Como usar
 
-Execute os comandos na pasta principal do projeto.
+## Preparação inicial
 
-## Primeira execução
-
-
+```bash
 python3 scripts/preflight.py
 python3 scripts/setup_all.py
+```
 
+## Gazebo com plantação
 
-## Iniciar a simulação
-
-### Terminal 1 — Husky e Gazebo
-
-
+```bash
 python3 scripts/start_simulation.py
+```
 
+Abre somente o mundo `AgroDTField`, já com 3 fileiras de milho.
 
-### Terminal 2 — criar a vCAN
+## Husky, opcional e separado
 
+```bash
+python3 scripts/start_husky.py
+```
 
+Para ISOBUS:
+
+```bash
 sudo python3 scripts/setup_vcan.py
-
-
-### Terminal 2 — ponte Husky para ISOBUS
-
-
 python3 scripts/start_bridge.py
-
-
-### Terminal 3 — monitor da vCAN
-
-
 python3 scripts/monitor_vcan.py
+```
 
+## Drone, separado
 
-### Terminal 4 — drone PX4 X500
-
-
+```bash
 python3 scripts/start_drone.py
+```
 
+## Executor e envio de missão
 
-### Terminal 5 — missão do drone
-
-
+```bash
 python3 scripts/start_drone_mission.py
+python3 scripts/send_drone_mission.py config/mission_test.json
+```
 
+## Diagnóstico e encerramento
 
-## Verificar o sistema
-
-
+```bash
 python3 scripts/check_all.py
-
-
-## Encerrar tudo
-
-
 python3 scripts/stop_all.py
+```
 
-
-
-As explicações e soluções de problemas estão no `README.md`.
+Veja o `README.md` para detalhes sobre tópicos, formato JSON, waypoints e status da missão.
