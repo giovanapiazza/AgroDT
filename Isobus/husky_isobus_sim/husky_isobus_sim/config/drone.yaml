@@ -2,20 +2,16 @@ px4:
   version: "v1.17.0"
   model: "gz_x500"
   autostart: 4001
-  world: "AgrobotScene"
+  world: "AgroDTField"
 
 spawn:
-  # X500 separado do Husky e acima do terreno.
-  x: 3.0
-  y: 0.0
-  z: 1.5
+  # X500 ao lado da plantação. Os waypoints da missão são relativos a esta origem.
+  x: -8.0
+  y: -4.0
+  z: 0.30
   roll: 0.0
   pitch: 0.0
   yaw: 0.0
 
 dds:
   port: 8888
-
-mission:
-  takeoff_height_m: 3.0
-  hover_seconds: 8.0
