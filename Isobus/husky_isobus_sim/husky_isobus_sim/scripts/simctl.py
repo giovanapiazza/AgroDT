@@ -429,15 +429,44 @@ def fresh_px4_clone(px4: Path) -> None:
     )
 
 
+def px4_has_gz_bridge(px4: Path) -> bool:
+    """Confirma que a build SITL contém o módulo gz_bridge."""
+    build = px4 / "build/px4_sitl_default"
+    bridge_lib = (
+        build
+        / "src/modules/simulation/gz_bridge/libmodules__simulation__gz_bridge.a"
+    )
+    if bridge_lib.is_file():
+        return True
+
+    ninja_file = build / "build.ninja"
+    if not ninja_file.is_file():
+        return False
+
+    try:
+        return "modules__simulation__gz_bridge" in ninja_file.read_text(
+            encoding="utf-8",
+            errors="ignore",
+        )
+    except OSError:
+        return False
+
+
 def repair_px4(px4: Path) -> None:
+    """Prepara uma build PX4 SITL válida, incluindo o bridge do Gazebo."""
     binary = px4 / "build/px4_sitl_default/bin/px4"
-    if os.access(binary, os.X_OK):
-        say(f"[OK] PX4 SITL já compilado: {binary}")
+
+    if (
+        os.access(binary, os.X_OK)
+        and px4_has_gz_bridge(px4)
+    ):
+        say(f"[OK] PX4 SITL + gz_bridge já compilados: {binary}")
         return
 
     if not (px4 / ".git").is_dir():
         fresh_px4_clone(px4)
     else:
+        say(f"[PX4] Sincronizando fontes {PX4_REF}...")
         commands = [
             ["git", "-C", px4, "fetch", "--tags", "--force"],
             ["git", "-C", px4, "checkout", "--detach", PX4_REF],
@@ -457,6 +486,40 @@ def repair_px4(px4: Path) -> None:
         for command in commands:
             run(command)
 
+    setup_script = px4 / "Tools/setup/ubuntu.sh"
+    if not setup_script.is_file():
+        die(f"[ERRO] instalador oficial do PX4 ausente: {setup_script}")
+
+    say("[PX4] Instalando dependências oficiais do SITL/Gazebo Harmonic...")
+    say("      Pode ser solicitada a senha do sudo.")
+    run(
+        [
+            "bash",
+            str(setup_script),
+            "--no-nuttx",
+        ],
+        cwd=px4,
+    )
+
+    # Uma build CMake criada antes da instalação das bibliotecas Gazebo
+    # mantém gz_bridge desabilitado. É necessário reconfigurar do zero.
+    say("[PX4] Limpando configuração SITL antiga...")
+    run(["make", "-C", px4, "distclean"], check=False)
+
+    say("[PX4] Recompilando px4_sitl com suporte ao Gazebo...")
+    run(["make", "-C", px4, "px4_sitl"])
+
+    if not os.access(binary, os.X_OK):
+        die(f"[ERRO] binário PX4 não foi gerado: {binary}")
+
+    if not px4_has_gz_bridge(px4):
+        die(
+            "[ERRO] PX4 recompilou, mas gz_bridge continua ausente.\n"
+            "Confirme a instalação do Gazebo Harmonic e execute novamente:\n"
+            "  python3 scripts/repair_px4.py"
+        )
+
+    say("[OK] PX4 SITL recompilado com gz_bridge.")
 
 def cmd_repair_px4(_args) -> int:
     repair_px4(ROOT / "third_party/PX4-Autopilot")
@@ -484,22 +547,9 @@ def cmd_setup_all(_args) -> int:
     run(["rosdep", "update"], env=env, check=False)
 
     px4 = tp / "PX4-Autopilot"
-    px4_bin = px4 / "build/px4_sitl_default/bin/px4"
-    if not os.access(px4_bin, os.X_OK):
-        repair_px4(px4)
-        run(
-            [
-                sys.executable,
-                "-m",
-                "pip",
-                "install",
-                "--user",
-                "--break-system-packages",
-                "-r",
-                px4 / "Tools/setup/requirements.txt",
-            ]
-        )
-        run(["make", "-C", px4, "px4_sitl"])
+    # Não basta o binário existir: builds configuradas sem as bibliotecas
+    # Gazebo não contêm o módulo gz_bridge e falham no spawn do X500.
+    repair_px4(px4)
 
     agent = tp / "Micro-XRCE-DDS-Agent"
     if not (agent / ".git").is_dir():
@@ -612,7 +662,7 @@ def cmd_start_simulation(_args) -> int:
     else:
         die(f"[ERRO] mundo '{world}' não carregou.")
 
-    say("[2/3] Campo carregado: 3 fileiras de milho.")
+    say("[2/3] Campo carregado: 4 talhões de milho e corredores centrais.")
     ensure_clock_bridge(env, world, processes)
     say("[3/3] [OK] GAZEBO + PLANTAÇÃO PRONTOS")
     say("Husky e drone devem ser iniciados em terminais separados.")
@@ -734,6 +784,17 @@ def cmd_start_drone(_args) -> int:
 
     if not os.access(px4_bin, os.X_OK):
         die("[ERRO] PX4 não compilado. Rode setup_all.py.")
+
+    if not px4_has_gz_bridge(px4):
+        die(
+            "[ERRO] esta build do PX4 não contém o módulo gz_bridge.\n"
+            "Isso acontece quando o PX4 é compilado antes das dependências "
+            "do Gazebo Harmonic.\n"
+            "Repare uma vez com:\n"
+            "  python3 scripts/repair_px4.py\n"
+            "Depois execute start_drone.py novamente."
+        )
+
     if not world_running(world, env):
         die(
             f"[ERRO] mundo '{world}' não está rodando. "
