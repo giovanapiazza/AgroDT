@@ -1,0 +1,30 @@
+{
+  "version": 1,
+  "type": "mission.upload",
+  "mission_id": 1,
+  "device": {
+    "id": "husky-01",
+    "frame": "ODOM"
+  },
+  "payload": {
+    "command": "start_mission",
+    "tolerance_m": 0.35,
+    "hold_seconds": 0.4,
+    "max_linear_mps": 0.45,
+    "max_angular_rps": 0.70,
+    "waypoints": [
+      {
+        "x": 0.0,
+        "y": 3.0
+      },
+      {
+        "x": 10.0,
+        "y": 3.0
+      },
+      {
+        "x": 20.0,
+        "y": 3.0
+      }
+    ]
+  }
+}
