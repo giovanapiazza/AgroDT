@@ -4,7 +4,7 @@ package_name = 'husky_isobus_bridge'
 
 setup(
     name=package_name,
-    version='2.0.0',
+    version='2.1.0',
     packages=find_packages(),
     data_files=[
         ('share/ament_index/resource_index/packages', ['resource/' + package_name]),
@@ -20,6 +20,7 @@ setup(
         'console_scripts': [
             'python_can_bridge = husky_isobus_bridge.bridge_node:main',
             'vcan_motion_monitor = husky_isobus_bridge.monitor:main',
+            'husky_mission_executor = husky_isobus_bridge.husky_mission_executor:main',
         ],
     },
 )
