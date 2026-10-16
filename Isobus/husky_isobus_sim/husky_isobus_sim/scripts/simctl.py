@@ -957,6 +957,65 @@ def cmd_send_drone_mission(args) -> int:
     return 0
 
 
+def cmd_start_husky_mission(_args) -> int:
+    env = project_env()
+
+    if not topic_has_publisher(
+        "/a200_0000/platform/odom",
+        env,
+    ):
+        die(
+            "[ERRO] Husky indisponível. "
+            "Rode start_husky.py primeiro."
+        )
+
+    say("[INFO] Executor de missão do Husky iniciado.")
+    say("[INFO] Entrada: /agrodt/husky/mission")
+    say("[INFO] Status:  /agrodt/husky/mission_status")
+    os.execvpe(
+        "ros2",
+        ["ros2", "run", "husky_isobus_bridge", "husky_mission_executor"],
+        env,
+    )
+    return 0
+
+
+def cmd_send_husky_mission(args) -> int:
+    env = project_env()
+    mission_path = Path(args.mission)
+
+    if not mission_path.is_absolute():
+        mission_path = ROOT / mission_path
+
+    if not mission_path.is_file():
+        die(f"[ERRO] missão ausente: {mission_path}")
+
+    data = json.loads(mission_path.read_text(encoding="utf-8"))
+    raw = json.dumps(data, separators=(",", ":"))
+    message = json.dumps({"data": raw})
+
+    say(f"[INFO] Enviando missão do Husky: {mission_path.name}")
+
+    result = run(
+        [
+            "ros2",
+            "topic",
+            "pub",
+            "--once",
+            "/agrodt/husky/mission",
+            "std_msgs/msg/String",
+            message,
+        ],
+        env=env,
+        check=False,
+    )
+
+    if result.returncode != 0:
+        die("[ERRO] falha ao publicar missão do Husky.")
+
+    say("[OK] missão publicada em /agrodt/husky/mission")
+    return 0
+
 def cmd_setup_vcan(args) -> int:
     if os.geteuid() != 0:
         die("[ERRO] execute com sudo.")
@@ -1162,6 +1221,8 @@ COMMANDS = {
     "setup_all": cmd_setup_all,
     "start_simulation": cmd_start_simulation,
     "start_husky": cmd_start_husky,
+    "start_husky_mission": cmd_start_husky_mission,
+    "send_husky_mission": cmd_send_husky_mission,
     "start_drone": cmd_start_drone,
     "start_drone_mission": cmd_start_drone_mission,
     "send_drone_mission": cmd_send_drone_mission,
@@ -1193,6 +1254,13 @@ def main(command: str | None = None) -> int:
             "mission",
             nargs="?",
             default="config/mission_test.json",
+        )
+
+    if command == "send_husky_mission":
+        parser.add_argument(
+            "mission",
+            nargs="?",
+            default="config/mission_husky.json",
         )
 
     args = parser.parse_args()
