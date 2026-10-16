@@ -5,689 +5,486 @@
       <max_step_size>0.004</max_step_size>
       <real_time_factor>1.0</real_time_factor>
     </physics>
+
     <plugin filename="gz-sim-physics-system" name="gz::sim::systems::Physics"/>
     <plugin filename="gz-sim-user-commands-system" name="gz::sim::systems::UserCommands"/>
     <plugin filename="gz-sim-scene-broadcaster-system" name="gz::sim::systems::SceneBroadcaster"/>
 
     <light type="directional" name="sun">
       <cast_shadows>true</cast_shadows>
-      <pose>0 0 10 0 0 0</pose>
-      <diffuse>0.9 0.9 0.85 1</diffuse>
-      <specular>0.2 0.2 0.2 1</specular>
-      <direction>-0.4 0.2 -1</direction>
+      <pose>0 0 18 0 0 0</pose>
+      <diffuse>0.92 0.90 0.82 1</diffuse>
+      <specular>0.15 0.15 0.15 1</specular>
+      <direction>-0.45 0.22 -1</direction>
     </light>
 
-    <model name="field_ground">
+    <model name="soil_ground">
       <static>true</static>
+      <pose>0 0 -0.10 0 0 0</pose>
       <link name="ground">
-        <collision name="collision"><geometry><box><size>30 20 0.1</size></box></geometry></collision>
+        <collision name="collision">
+          <geometry><box><size>40 28 0.20</size></box></geometry>
+        </collision>
         <visual name="visual">
-          <geometry><box><size>30 20 0.1</size></box></geometry>
-          <material><ambient>0.32 0.22 0.10 1</ambient><diffuse>0.38 0.28 0.12 1</diffuse></material>
+          <geometry><box><size>40 28 0.20</size></box></geometry>
+          <material>
+            <ambient>0.23 0.12 0.055 1</ambient>
+            <diffuse>0.30 0.16 0.07 1</diffuse>
+            <specular>0.03 0.03 0.03 1</specular>
+          </material>
         </visual>
       </link>
     </model>
 
-    <model name="row_marker_1"><static>true</static><pose>0 -2.5 0.06 0 0 0</pose>
-      <link name="marker"><visual name="v"><geometry><box><size>15 0.18 0.02</size></box></geometry>
-      <material><ambient>0.20 0.12 0.05 1</ambient><diffuse>0.20 0.12 0.05 1</diffuse></material></visual></link></model>
-    <model name="row_marker_2"><static>true</static><pose>0 0 0.06 0 0 0</pose>
-      <link name="marker"><visual name="v"><geometry><box><size>15 0.18 0.02</size></box></geometry>
-      <material><ambient>0.20 0.12 0.05 1</ambient><diffuse>0.20 0.12 0.05 1</diffuse></material></visual></link></model>
-    <model name="row_marker_3"><static>true</static><pose>0 2.5 0.06 0 0 0</pose>
-      <link name="marker"><visual name="v"><geometry><box><size>15 0.18 0.02</size></box></geometry>
-      <material><ambient>0.20 0.12 0.05 1</ambient><diffuse>0.20 0.12 0.05 1</diffuse></material></visual></link></model>
+    <!-- Muretas escuras para dar o aspecto de canteiro/campo cercado da referência. -->
+    <model name="wall_north">
+      <static>true</static>
+      <pose>0 13.5 1.40 0 0 0</pose>
+      <link name="wall">
+        <collision name="collision"><geometry><box><size>40 1 2.8</size></box></geometry></collision>
+        <visual name="visual">
+          <geometry><box><size>40 1 2.8</size></box></geometry>
+          <material><ambient>0.09 0.045 0.025 1</ambient><diffuse>0.13 0.06 0.03 1</diffuse></material>
+        </visual>
+      </link>
+    </model>
 
-    <model name="corn_r1_01">
+    <model name="wall_south">
       <static>true</static>
-      <pose>-6 -2.5 0 0 0 0</pose>
-      <link name="plant">
-        <visual name="stem">
-          <pose>0 0 0.75 0 0 0</pose>
-          <geometry><cylinder><radius>0.045</radius><length>1.5</length></cylinder></geometry>
-          <material><ambient>0.15 0.55 0.10 1</ambient><diffuse>0.15 0.55 0.10 1</diffuse></material>
-        </visual>
-        <visual name="leaf1">
-          <pose>0.20 0 0.72 0 0.45 0</pose>
-          <geometry><box><size>0.55 0.08 0.025</size></box></geometry>
-          <material><ambient>0.04 0.45 0.04 1</ambient><diffuse>0.04 0.45 0.04 1</diffuse></material>
-        </visual>
-        <visual name="leaf2">
-          <pose>-0.20 0 0.95 0 -0.45 0</pose>
-          <geometry><box><size>0.55 0.08 0.025</size></box></geometry>
-          <material><ambient>0.04 0.45 0.04 1</ambient><diffuse>0.04 0.45 0.04 1</diffuse></material>
-        </visual>
-        <visual name="leaf3">
-          <pose>0 0.18 1.15 -0.45 0 1.5708</pose>
-          <geometry><box><size>0.45 0.07 0.025</size></box></geometry>
-          <material><ambient>0.05 0.50 0.05 1</ambient><diffuse>0.05 0.50 0.05 1</diffuse></material>
-        </visual>
-        <visual name="ear">
-          <pose>0.08 0 1.08 0 0.2 0</pose>
-          <geometry><cylinder><radius>0.07</radius><length>0.28</length></cylinder></geometry>
-          <material><ambient>0.85 0.65 0.12 1</ambient><diffuse>0.85 0.65 0.12 1</diffuse></material>
+      <pose>0 -13.5 1.40 0 0 0</pose>
+      <link name="wall">
+        <collision name="collision"><geometry><box><size>40 1 2.8</size></box></geometry></collision>
+        <visual name="visual">
+          <geometry><box><size>40 1 2.8</size></box></geometry>
+          <material><ambient>0.09 0.045 0.025 1</ambient><diffuse>0.13 0.06 0.03 1</diffuse></material>
         </visual>
       </link>
     </model>
-    <model name="corn_r1_02">
+
+    <model name="wall_east">
       <static>true</static>
-      <pose>-4 -2.5 0 0 0 0</pose>
-      <link name="plant">
-        <visual name="stem">
-          <pose>0 0 0.75 0 0 0</pose>
-          <geometry><cylinder><radius>0.045</radius><length>1.5</length></cylinder></geometry>
-          <material><ambient>0.15 0.55 0.10 1</ambient><diffuse>0.15 0.55 0.10 1</diffuse></material>
-        </visual>
-        <visual name="leaf1">
-          <pose>0.20 0 0.72 0 0.45 0</pose>
-          <geometry><box><size>0.55 0.08 0.025</size></box></geometry>
-          <material><ambient>0.04 0.45 0.04 1</ambient><diffuse>0.04 0.45 0.04 1</diffuse></material>
-        </visual>
-        <visual name="leaf2">
-          <pose>-0.20 0 0.95 0 -0.45 0</pose>
-          <geometry><box><size>0.55 0.08 0.025</size></box></geometry>
-          <material><ambient>0.04 0.45 0.04 1</ambient><diffuse>0.04 0.45 0.04 1</diffuse></material>
-        </visual>
-        <visual name="leaf3">
-          <pose>0 0.18 1.15 -0.45 0 1.5708</pose>
-          <geometry><box><size>0.45 0.07 0.025</size></box></geometry>
-          <material><ambient>0.05 0.50 0.05 1</ambient><diffuse>0.05 0.50 0.05 1</diffuse></material>
-        </visual>
-        <visual name="ear">
-          <pose>0.08 0 1.08 0 0.2 0</pose>
-          <geometry><cylinder><radius>0.07</radius><length>0.28</length></cylinder></geometry>
-          <material><ambient>0.85 0.65 0.12 1</ambient><diffuse>0.85 0.65 0.12 1</diffuse></material>
+      <pose>19.5 0 1.40 0 0 0</pose>
+      <link name="wall">
+        <collision name="collision"><geometry><box><size>1 28 2.8</size></box></geometry></collision>
+        <visual name="visual">
+          <geometry><box><size>1 28 2.8</size></box></geometry>
+          <material><ambient>0.09 0.045 0.025 1</ambient><diffuse>0.13 0.06 0.03 1</diffuse></material>
         </visual>
       </link>
     </model>
-    <model name="corn_r1_03">
+
+    <model name="wall_west">
       <static>true</static>
-      <pose>-2 -2.5 0 0 0 0</pose>
-      <link name="plant">
-        <visual name="stem">
-          <pose>0 0 0.75 0 0 0</pose>
-          <geometry><cylinder><radius>0.045</radius><length>1.5</length></cylinder></geometry>
-          <material><ambient>0.15 0.55 0.10 1</ambient><diffuse>0.15 0.55 0.10 1</diffuse></material>
-        </visual>
-        <visual name="leaf1">
-          <pose>0.20 0 0.72 0 0.45 0</pose>
-          <geometry><box><size>0.55 0.08 0.025</size></box></geometry>
-          <material><ambient>0.04 0.45 0.04 1</ambient><diffuse>0.04 0.45 0.04 1</diffuse></material>
-        </visual>
-        <visual name="leaf2">
-          <pose>-0.20 0 0.95 0 -0.45 0</pose>
-          <geometry><box><size>0.55 0.08 0.025</size></box></geometry>
-          <material><ambient>0.04 0.45 0.04 1</ambient><diffuse>0.04 0.45 0.04 1</diffuse></material>
-        </visual>
-        <visual name="leaf3">
-          <pose>0 0.18 1.15 -0.45 0 1.5708</pose>
-          <geometry><box><size>0.45 0.07 0.025</size></box></geometry>
-          <material><ambient>0.05 0.50 0.05 1</ambient><diffuse>0.05 0.50 0.05 1</diffuse></material>
-        </visual>
-        <visual name="ear">
-          <pose>0.08 0 1.08 0 0.2 0</pose>
-          <geometry><cylinder><radius>0.07</radius><length>0.28</length></cylinder></geometry>
-          <material><ambient>0.85 0.65 0.12 1</ambient><diffuse>0.85 0.65 0.12 1</diffuse></material>
+      <pose>-19.5 0 1.40 0 0 0</pose>
+      <link name="wall">
+        <collision name="collision"><geometry><box><size>1 28 2.8</size></box></geometry></collision>
+        <visual name="visual">
+          <geometry><box><size>1 28 2.8</size></box></geometry>
+          <material><ambient>0.09 0.045 0.025 1</ambient><diffuse>0.13 0.06 0.03 1</diffuse></material>
         </visual>
       </link>
     </model>
-    <model name="corn_r1_04">
-      <static>true</static>
-      <pose>0 -2.5 0 0 0 0</pose>
-      <link name="plant">
-        <visual name="stem">
-          <pose>0 0 0.75 0 0 0</pose>
-          <geometry><cylinder><radius>0.045</radius><length>1.5</length></cylinder></geometry>
-          <material><ambient>0.15 0.55 0.10 1</ambient><diffuse>0.15 0.55 0.10 1</diffuse></material>
-        </visual>
-        <visual name="leaf1">
-          <pose>0.20 0 0.72 0 0.45 0</pose>
-          <geometry><box><size>0.55 0.08 0.025</size></box></geometry>
-          <material><ambient>0.04 0.45 0.04 1</ambient><diffuse>0.04 0.45 0.04 1</diffuse></material>
-        </visual>
-        <visual name="leaf2">
-          <pose>-0.20 0 0.95 0 -0.45 0</pose>
-          <geometry><box><size>0.55 0.08 0.025</size></box></geometry>
-          <material><ambient>0.04 0.45 0.04 1</ambient><diffuse>0.04 0.45 0.04 1</diffuse></material>
-        </visual>
-        <visual name="leaf3">
-          <pose>0 0.18 1.15 -0.45 0 1.5708</pose>
-          <geometry><box><size>0.45 0.07 0.025</size></box></geometry>
-          <material><ambient>0.05 0.50 0.05 1</ambient><diffuse>0.05 0.50 0.05 1</diffuse></material>
-        </visual>
-        <visual name="ear">
-          <pose>0.08 0 1.08 0 0.2 0</pose>
-          <geometry><cylinder><radius>0.07</radius><length>0.28</length></cylinder></geometry>
-          <material><ambient>0.85 0.65 0.12 1</ambient><diffuse>0.85 0.65 0.12 1</diffuse></material>
-        </visual>
-      </link>
-    </model>
-    <model name="corn_r1_05">
-      <static>true</static>
-      <pose>2 -2.5 0 0 0 0</pose>
-      <link name="plant">
-        <visual name="stem">
-          <pose>0 0 0.75 0 0 0</pose>
-          <geometry><cylinder><radius>0.045</radius><length>1.5</length></cylinder></geometry>
-          <material><ambient>0.15 0.55 0.10 1</ambient><diffuse>0.15 0.55 0.10 1</diffuse></material>
-        </visual>
-        <visual name="leaf1">
-          <pose>0.20 0 0.72 0 0.45 0</pose>
-          <geometry><box><size>0.55 0.08 0.025</size></box></geometry>
-          <material><ambient>0.04 0.45 0.04 1</ambient><diffuse>0.04 0.45 0.04 1</diffuse></material>
-        </visual>
-        <visual name="leaf2">
-          <pose>-0.20 0 0.95 0 -0.45 0</pose>
-          <geometry><box><size>0.55 0.08 0.025</size></box></geometry>
-          <material><ambient>0.04 0.45 0.04 1</ambient><diffuse>0.04 0.45 0.04 1</diffuse></material>
-        </visual>
-        <visual name="leaf3">
-          <pose>0 0.18 1.15 -0.45 0 1.5708</pose>
-          <geometry><box><size>0.45 0.07 0.025</size></box></geometry>
-          <material><ambient>0.05 0.50 0.05 1</ambient><diffuse>0.05 0.50 0.05 1</diffuse></material>
-        </visual>
-        <visual name="ear">
-          <pose>0.08 0 1.08 0 0.2 0</pose>
-          <geometry><cylinder><radius>0.07</radius><length>0.28</length></cylinder></geometry>
-          <material><ambient>0.85 0.65 0.12 1</ambient><diffuse>0.85 0.65 0.12 1</diffuse></material>
-        </visual>
-      </link>
-    </model>
-    <model name="corn_r1_06">
-      <static>true</static>
-      <pose>4 -2.5 0 0 0 0</pose>
-      <link name="plant">
-        <visual name="stem">
-          <pose>0 0 0.75 0 0 0</pose>
-          <geometry><cylinder><radius>0.045</radius><length>1.5</length></cylinder></geometry>
-          <material><ambient>0.15 0.55 0.10 1</ambient><diffuse>0.15 0.55 0.10 1</diffuse></material>
-        </visual>
-        <visual name="leaf1">
-          <pose>0.20 0 0.72 0 0.45 0</pose>
-          <geometry><box><size>0.55 0.08 0.025</size></box></geometry>
-          <material><ambient>0.04 0.45 0.04 1</ambient><diffuse>0.04 0.45 0.04 1</diffuse></material>
-        </visual>
-        <visual name="leaf2">
-          <pose>-0.20 0 0.95 0 -0.45 0</pose>
-          <geometry><box><size>0.55 0.08 0.025</size></box></geometry>
-          <material><ambient>0.04 0.45 0.04 1</ambient><diffuse>0.04 0.45 0.04 1</diffuse></material>
-        </visual>
-        <visual name="leaf3">
-          <pose>0 0.18 1.15 -0.45 0 1.5708</pose>
-          <geometry><box><size>0.45 0.07 0.025</size></box></geometry>
-          <material><ambient>0.05 0.50 0.05 1</ambient><diffuse>0.05 0.50 0.05 1</diffuse></material>
-        </visual>
-        <visual name="ear">
-          <pose>0.08 0 1.08 0 0.2 0</pose>
-          <geometry><cylinder><radius>0.07</radius><length>0.28</length></cylinder></geometry>
-          <material><ambient>0.85 0.65 0.12 1</ambient><diffuse>0.85 0.65 0.12 1</diffuse></material>
-        </visual>
-      </link>
-    </model>
-    <model name="corn_r1_07">
-      <static>true</static>
-      <pose>6 -2.5 0 0 0 0</pose>
-      <link name="plant">
-        <visual name="stem">
-          <pose>0 0 0.75 0 0 0</pose>
-          <geometry><cylinder><radius>0.045</radius><length>1.5</length></cylinder></geometry>
-          <material><ambient>0.15 0.55 0.10 1</ambient><diffuse>0.15 0.55 0.10 1</diffuse></material>
-        </visual>
-        <visual name="leaf1">
-          <pose>0.20 0 0.72 0 0.45 0</pose>
-          <geometry><box><size>0.55 0.08 0.025</size></box></geometry>
-          <material><ambient>0.04 0.45 0.04 1</ambient><diffuse>0.04 0.45 0.04 1</diffuse></material>
-        </visual>
-        <visual name="leaf2">
-          <pose>-0.20 0 0.95 0 -0.45 0</pose>
-          <geometry><box><size>0.55 0.08 0.025</size></box></geometry>
-          <material><ambient>0.04 0.45 0.04 1</ambient><diffuse>0.04 0.45 0.04 1</diffuse></material>
-        </visual>
-        <visual name="leaf3">
-          <pose>0 0.18 1.15 -0.45 0 1.5708</pose>
-          <geometry><box><size>0.45 0.07 0.025</size></box></geometry>
-          <material><ambient>0.05 0.50 0.05 1</ambient><diffuse>0.05 0.50 0.05 1</diffuse></material>
-        </visual>
-        <visual name="ear">
-          <pose>0.08 0 1.08 0 0.2 0</pose>
-          <geometry><cylinder><radius>0.07</radius><length>0.28</length></cylinder></geometry>
-          <material><ambient>0.85 0.65 0.12 1</ambient><diffuse>0.85 0.65 0.12 1</diffuse></material>
-        </visual>
-      </link>
-    </model>
-    <model name="corn_r2_01">
-      <static>true</static>
-      <pose>-6 0 0 0 0 0</pose>
-      <link name="plant">
-        <visual name="stem">
-          <pose>0 0 0.75 0 0 0</pose>
-          <geometry><cylinder><radius>0.045</radius><length>1.5</length></cylinder></geometry>
-          <material><ambient>0.15 0.55 0.10 1</ambient><diffuse>0.15 0.55 0.10 1</diffuse></material>
-        </visual>
-        <visual name="leaf1">
-          <pose>0.20 0 0.72 0 0.45 0</pose>
-          <geometry><box><size>0.55 0.08 0.025</size></box></geometry>
-          <material><ambient>0.04 0.45 0.04 1</ambient><diffuse>0.04 0.45 0.04 1</diffuse></material>
-        </visual>
-        <visual name="leaf2">
-          <pose>-0.20 0 0.95 0 -0.45 0</pose>
-          <geometry><box><size>0.55 0.08 0.025</size></box></geometry>
-          <material><ambient>0.04 0.45 0.04 1</ambient><diffuse>0.04 0.45 0.04 1</diffuse></material>
-        </visual>
-        <visual name="leaf3">
-          <pose>0 0.18 1.15 -0.45 0 1.5708</pose>
-          <geometry><box><size>0.45 0.07 0.025</size></box></geometry>
-          <material><ambient>0.05 0.50 0.05 1</ambient><diffuse>0.05 0.50 0.05 1</diffuse></material>
-        </visual>
-        <visual name="ear">
-          <pose>0.08 0 1.08 0 0.2 0</pose>
-          <geometry><cylinder><radius>0.07</radius><length>0.28</length></cylinder></geometry>
-          <material><ambient>0.85 0.65 0.12 1</ambient><diffuse>0.85 0.65 0.12 1</diffuse></material>
-        </visual>
-      </link>
-    </model>
-    <model name="corn_r2_02">
-      <static>true</static>
-      <pose>-4 0 0 0 0 0</pose>
-      <link name="plant">
-        <visual name="stem">
-          <pose>0 0 0.75 0 0 0</pose>
-          <geometry><cylinder><radius>0.045</radius><length>1.5</length></cylinder></geometry>
-          <material><ambient>0.15 0.55 0.10 1</ambient><diffuse>0.15 0.55 0.10 1</diffuse></material>
-        </visual>
-        <visual name="leaf1">
-          <pose>0.20 0 0.72 0 0.45 0</pose>
-          <geometry><box><size>0.55 0.08 0.025</size></box></geometry>
-          <material><ambient>0.04 0.45 0.04 1</ambient><diffuse>0.04 0.45 0.04 1</diffuse></material>
-        </visual>
-        <visual name="leaf2">
-          <pose>-0.20 0 0.95 0 -0.45 0</pose>
-          <geometry><box><size>0.55 0.08 0.025</size></box></geometry>
-          <material><ambient>0.04 0.45 0.04 1</ambient><diffuse>0.04 0.45 0.04 1</diffuse></material>
-        </visual>
-        <visual name="leaf3">
-          <pose>0 0.18 1.15 -0.45 0 1.5708</pose>
-          <geometry><box><size>0.45 0.07 0.025</size></box></geometry>
-          <material><ambient>0.05 0.50 0.05 1</ambient><diffuse>0.05 0.50 0.05 1</diffuse></material>
-        </visual>
-        <visual name="ear">
-          <pose>0.08 0 1.08 0 0.2 0</pose>
-          <geometry><cylinder><radius>0.07</radius><length>0.28</length></cylinder></geometry>
-          <material><ambient>0.85 0.65 0.12 1</ambient><diffuse>0.85 0.65 0.12 1</diffuse></material>
-        </visual>
-      </link>
-    </model>
-    <model name="corn_r2_03">
-      <static>true</static>
-      <pose>-2 0 0 0 0 0</pose>
-      <link name="plant">
-        <visual name="stem">
-          <pose>0 0 0.75 0 0 0</pose>
-          <geometry><cylinder><radius>0.045</radius><length>1.5</length></cylinder></geometry>
-          <material><ambient>0.15 0.55 0.10 1</ambient><diffuse>0.15 0.55 0.10 1</diffuse></material>
-        </visual>
-        <visual name="leaf1">
-          <pose>0.20 0 0.72 0 0.45 0</pose>
-          <geometry><box><size>0.55 0.08 0.025</size></box></geometry>
-          <material><ambient>0.04 0.45 0.04 1</ambient><diffuse>0.04 0.45 0.04 1</diffuse></material>
-        </visual>
-        <visual name="leaf2">
-          <pose>-0.20 0 0.95 0 -0.45 0</pose>
-          <geometry><box><size>0.55 0.08 0.025</size></box></geometry>
-          <material><ambient>0.04 0.45 0.04 1</ambient><diffuse>0.04 0.45 0.04 1</diffuse></material>
-        </visual>
-        <visual name="leaf3">
-          <pose>0 0.18 1.15 -0.45 0 1.5708</pose>
-          <geometry><box><size>0.45 0.07 0.025</size></box></geometry>
-          <material><ambient>0.05 0.50 0.05 1</ambient><diffuse>0.05 0.50 0.05 1</diffuse></material>
-        </visual>
-        <visual name="ear">
-          <pose>0.08 0 1.08 0 0.2 0</pose>
-          <geometry><cylinder><radius>0.07</radius><length>0.28</length></cylinder></geometry>
-          <material><ambient>0.85 0.65 0.12 1</ambient><diffuse>0.85 0.65 0.12 1</diffuse></material>
-        </visual>
-      </link>
-    </model>
-    <model name="corn_r2_04">
-      <static>true</static>
-      <pose>0 0 0 0 0 0</pose>
-      <link name="plant">
-        <visual name="stem">
-          <pose>0 0 0.75 0 0 0</pose>
-          <geometry><cylinder><radius>0.045</radius><length>1.5</length></cylinder></geometry>
-          <material><ambient>0.15 0.55 0.10 1</ambient><diffuse>0.15 0.55 0.10 1</diffuse></material>
-        </visual>
-        <visual name="leaf1">
-          <pose>0.20 0 0.72 0 0.45 0</pose>
-          <geometry><box><size>0.55 0.08 0.025</size></box></geometry>
-          <material><ambient>0.04 0.45 0.04 1</ambient><diffuse>0.04 0.45 0.04 1</diffuse></material>
-        </visual>
-        <visual name="leaf2">
-          <pose>-0.20 0 0.95 0 -0.45 0</pose>
-          <geometry><box><size>0.55 0.08 0.025</size></box></geometry>
-          <material><ambient>0.04 0.45 0.04 1</ambient><diffuse>0.04 0.45 0.04 1</diffuse></material>
-        </visual>
-        <visual name="leaf3">
-          <pose>0 0.18 1.15 -0.45 0 1.5708</pose>
-          <geometry><box><size>0.45 0.07 0.025</size></box></geometry>
-          <material><ambient>0.05 0.50 0.05 1</ambient><diffuse>0.05 0.50 0.05 1</diffuse></material>
-        </visual>
-        <visual name="ear">
-          <pose>0.08 0 1.08 0 0.2 0</pose>
-          <geometry><cylinder><radius>0.07</radius><length>0.28</length></cylinder></geometry>
-          <material><ambient>0.85 0.65 0.12 1</ambient><diffuse>0.85 0.65 0.12 1</diffuse></material>
-        </visual>
-      </link>
-    </model>
-    <model name="corn_r2_05">
-      <static>true</static>
-      <pose>2 0 0 0 0 0</pose>
-      <link name="plant">
-        <visual name="stem">
-          <pose>0 0 0.75 0 0 0</pose>
-          <geometry><cylinder><radius>0.045</radius><length>1.5</length></cylinder></geometry>
-          <material><ambient>0.15 0.55 0.10 1</ambient><diffuse>0.15 0.55 0.10 1</diffuse></material>
-        </visual>
-        <visual name="leaf1">
-          <pose>0.20 0 0.72 0 0.45 0</pose>
-          <geometry><box><size>0.55 0.08 0.025</size></box></geometry>
-          <material><ambient>0.04 0.45 0.04 1</ambient><diffuse>0.04 0.45 0.04 1</diffuse></material>
-        </visual>
-        <visual name="leaf2">
-          <pose>-0.20 0 0.95 0 -0.45 0</pose>
-          <geometry><box><size>0.55 0.08 0.025</size></box></geometry>
-          <material><ambient>0.04 0.45 0.04 1</ambient><diffuse>0.04 0.45 0.04 1</diffuse></material>
-        </visual>
-        <visual name="leaf3">
-          <pose>0 0.18 1.15 -0.45 0 1.5708</pose>
-          <geometry><box><size>0.45 0.07 0.025</size></box></geometry>
-          <material><ambient>0.05 0.50 0.05 1</ambient><diffuse>0.05 0.50 0.05 1</diffuse></material>
-        </visual>
-        <visual name="ear">
-          <pose>0.08 0 1.08 0 0.2 0</pose>
-          <geometry><cylinder><radius>0.07</radius><length>0.28</length></cylinder></geometry>
-          <material><ambient>0.85 0.65 0.12 1</ambient><diffuse>0.85 0.65 0.12 1</diffuse></material>
-        </visual>
-      </link>
-    </model>
-    <model name="corn_r2_06">
-      <static>true</static>
-      <pose>4 0 0 0 0 0</pose>
-      <link name="plant">
-        <visual name="stem">
-          <pose>0 0 0.75 0 0 0</pose>
-          <geometry><cylinder><radius>0.045</radius><length>1.5</length></cylinder></geometry>
-          <material><ambient>0.15 0.55 0.10 1</ambient><diffuse>0.15 0.55 0.10 1</diffuse></material>
-        </visual>
-        <visual name="leaf1">
-          <pose>0.20 0 0.72 0 0.45 0</pose>
-          <geometry><box><size>0.55 0.08 0.025</size></box></geometry>
-          <material><ambient>0.04 0.45 0.04 1</ambient><diffuse>0.04 0.45 0.04 1</diffuse></material>
-        </visual>
-        <visual name="leaf2">
-          <pose>-0.20 0 0.95 0 -0.45 0</pose>
-          <geometry><box><size>0.55 0.08 0.025</size></box></geometry>
-          <material><ambient>0.04 0.45 0.04 1</ambient><diffuse>0.04 0.45 0.04 1</diffuse></material>
-        </visual>
-        <visual name="leaf3">
-          <pose>0 0.18 1.15 -0.45 0 1.5708</pose>
-          <geometry><box><size>0.45 0.07 0.025</size></box></geometry>
-          <material><ambient>0.05 0.50 0.05 1</ambient><diffuse>0.05 0.50 0.05 1</diffuse></material>
-        </visual>
-        <visual name="ear">
-          <pose>0.08 0 1.08 0 0.2 0</pose>
-          <geometry><cylinder><radius>0.07</radius><length>0.28</length></cylinder></geometry>
-          <material><ambient>0.85 0.65 0.12 1</ambient><diffuse>0.85 0.65 0.12 1</diffuse></material>
-        </visual>
-      </link>
-    </model>
-    <model name="corn_r2_07">
-      <static>true</static>
-      <pose>6 0 0 0 0 0</pose>
-      <link name="plant">
-        <visual name="stem">
-          <pose>0 0 0.75 0 0 0</pose>
-          <geometry><cylinder><radius>0.045</radius><length>1.5</length></cylinder></geometry>
-          <material><ambient>0.15 0.55 0.10 1</ambient><diffuse>0.15 0.55 0.10 1</diffuse></material>
-        </visual>
-        <visual name="leaf1">
-          <pose>0.20 0 0.72 0 0.45 0</pose>
-          <geometry><box><size>0.55 0.08 0.025</size></box></geometry>
-          <material><ambient>0.04 0.45 0.04 1</ambient><diffuse>0.04 0.45 0.04 1</diffuse></material>
-        </visual>
-        <visual name="leaf2">
-          <pose>-0.20 0 0.95 0 -0.45 0</pose>
-          <geometry><box><size>0.55 0.08 0.025</size></box></geometry>
-          <material><ambient>0.04 0.45 0.04 1</ambient><diffuse>0.04 0.45 0.04 1</diffuse></material>
-        </visual>
-        <visual name="leaf3">
-          <pose>0 0.18 1.15 -0.45 0 1.5708</pose>
-          <geometry><box><size>0.45 0.07 0.025</size></box></geometry>
-          <material><ambient>0.05 0.50 0.05 1</ambient><diffuse>0.05 0.50 0.05 1</diffuse></material>
-        </visual>
-        <visual name="ear">
-          <pose>0.08 0 1.08 0 0.2 0</pose>
-          <geometry><cylinder><radius>0.07</radius><length>0.28</length></cylinder></geometry>
-          <material><ambient>0.85 0.65 0.12 1</ambient><diffuse>0.85 0.65 0.12 1</diffuse></material>
-        </visual>
-      </link>
-    </model>
-    <model name="corn_r3_01">
-      <static>true</static>
-      <pose>-6 2.5 0 0 0 0</pose>
-      <link name="plant">
-        <visual name="stem">
-          <pose>0 0 0.75 0 0 0</pose>
-          <geometry><cylinder><radius>0.045</radius><length>1.5</length></cylinder></geometry>
-          <material><ambient>0.15 0.55 0.10 1</ambient><diffuse>0.15 0.55 0.10 1</diffuse></material>
-        </visual>
-        <visual name="leaf1">
-          <pose>0.20 0 0.72 0 0.45 0</pose>
-          <geometry><box><size>0.55 0.08 0.025</size></box></geometry>
-          <material><ambient>0.04 0.45 0.04 1</ambient><diffuse>0.04 0.45 0.04 1</diffuse></material>
-        </visual>
-        <visual name="leaf2">
-          <pose>-0.20 0 0.95 0 -0.45 0</pose>
-          <geometry><box><size>0.55 0.08 0.025</size></box></geometry>
-          <material><ambient>0.04 0.45 0.04 1</ambient><diffuse>0.04 0.45 0.04 1</diffuse></material>
-        </visual>
-        <visual name="leaf3">
-          <pose>0 0.18 1.15 -0.45 0 1.5708</pose>
-          <geometry><box><size>0.45 0.07 0.025</size></box></geometry>
-          <material><ambient>0.05 0.50 0.05 1</ambient><diffuse>0.05 0.50 0.05 1</diffuse></material>
-        </visual>
-        <visual name="ear">
-          <pose>0.08 0 1.08 0 0.2 0</pose>
-          <geometry><cylinder><radius>0.07</radius><length>0.28</length></cylinder></geometry>
-          <material><ambient>0.85 0.65 0.12 1</ambient><diffuse>0.85 0.65 0.12 1</diffuse></material>
-        </visual>
-      </link>
-    </model>
-    <model name="corn_r3_02">
-      <static>true</static>
-      <pose>-4 2.5 0 0 0 0</pose>
-      <link name="plant">
-        <visual name="stem">
-          <pose>0 0 0.75 0 0 0</pose>
-          <geometry><cylinder><radius>0.045</radius><length>1.5</length></cylinder></geometry>
-          <material><ambient>0.15 0.55 0.10 1</ambient><diffuse>0.15 0.55 0.10 1</diffuse></material>
-        </visual>
-        <visual name="leaf1">
-          <pose>0.20 0 0.72 0 0.45 0</pose>
-          <geometry><box><size>0.55 0.08 0.025</size></box></geometry>
-          <material><ambient>0.04 0.45 0.04 1</ambient><diffuse>0.04 0.45 0.04 1</diffuse></material>
-        </visual>
-        <visual name="leaf2">
-          <pose>-0.20 0 0.95 0 -0.45 0</pose>
-          <geometry><box><size>0.55 0.08 0.025</size></box></geometry>
-          <material><ambient>0.04 0.45 0.04 1</ambient><diffuse>0.04 0.45 0.04 1</diffuse></material>
-        </visual>
-        <visual name="leaf3">
-          <pose>0 0.18 1.15 -0.45 0 1.5708</pose>
-          <geometry><box><size>0.45 0.07 0.025</size></box></geometry>
-          <material><ambient>0.05 0.50 0.05 1</ambient><diffuse>0.05 0.50 0.05 1</diffuse></material>
-        </visual>
-        <visual name="ear">
-          <pose>0.08 0 1.08 0 0.2 0</pose>
-          <geometry><cylinder><radius>0.07</radius><length>0.28</length></cylinder></geometry>
-          <material><ambient>0.85 0.65 0.12 1</ambient><diffuse>0.85 0.65 0.12 1</diffuse></material>
-        </visual>
-      </link>
-    </model>
-    <model name="corn_r3_03">
-      <static>true</static>
-      <pose>-2 2.5 0 0 0 0</pose>
-      <link name="plant">
-        <visual name="stem">
-          <pose>0 0 0.75 0 0 0</pose>
-          <geometry><cylinder><radius>0.045</radius><length>1.5</length></cylinder></geometry>
-          <material><ambient>0.15 0.55 0.10 1</ambient><diffuse>0.15 0.55 0.10 1</diffuse></material>
-        </visual>
-        <visual name="leaf1">
-          <pose>0.20 0 0.72 0 0.45 0</pose>
-          <geometry><box><size>0.55 0.08 0.025</size></box></geometry>
-          <material><ambient>0.04 0.45 0.04 1</ambient><diffuse>0.04 0.45 0.04 1</diffuse></material>
-        </visual>
-        <visual name="leaf2">
-          <pose>-0.20 0 0.95 0 -0.45 0</pose>
-          <geometry><box><size>0.55 0.08 0.025</size></box></geometry>
-          <material><ambient>0.04 0.45 0.04 1</ambient><diffuse>0.04 0.45 0.04 1</diffuse></material>
-        </visual>
-        <visual name="leaf3">
-          <pose>0 0.18 1.15 -0.45 0 1.5708</pose>
-          <geometry><box><size>0.45 0.07 0.025</size></box></geometry>
-          <material><ambient>0.05 0.50 0.05 1</ambient><diffuse>0.05 0.50 0.05 1</diffuse></material>
-        </visual>
-        <visual name="ear">
-          <pose>0.08 0 1.08 0 0.2 0</pose>
-          <geometry><cylinder><radius>0.07</radius><length>0.28</length></cylinder></geometry>
-          <material><ambient>0.85 0.65 0.12 1</ambient><diffuse>0.85 0.65 0.12 1</diffuse></material>
-        </visual>
-      </link>
-    </model>
-    <model name="corn_r3_04">
-      <static>true</static>
-      <pose>0 2.5 0 0 0 0</pose>
-      <link name="plant">
-        <visual name="stem">
-          <pose>0 0 0.75 0 0 0</pose>
-          <geometry><cylinder><radius>0.045</radius><length>1.5</length></cylinder></geometry>
-          <material><ambient>0.15 0.55 0.10 1</ambient><diffuse>0.15 0.55 0.10 1</diffuse></material>
-        </visual>
-        <visual name="leaf1">
-          <pose>0.20 0 0.72 0 0.45 0</pose>
-          <geometry><box><size>0.55 0.08 0.025</size></box></geometry>
-          <material><ambient>0.04 0.45 0.04 1</ambient><diffuse>0.04 0.45 0.04 1</diffuse></material>
-        </visual>
-        <visual name="leaf2">
-          <pose>-0.20 0 0.95 0 -0.45 0</pose>
-          <geometry><box><size>0.55 0.08 0.025</size></box></geometry>
-          <material><ambient>0.04 0.45 0.04 1</ambient><diffuse>0.04 0.45 0.04 1</diffuse></material>
-        </visual>
-        <visual name="leaf3">
-          <pose>0 0.18 1.15 -0.45 0 1.5708</pose>
-          <geometry><box><size>0.45 0.07 0.025</size></box></geometry>
-          <material><ambient>0.05 0.50 0.05 1</ambient><diffuse>0.05 0.50 0.05 1</diffuse></material>
-        </visual>
-        <visual name="ear">
-          <pose>0.08 0 1.08 0 0.2 0</pose>
-          <geometry><cylinder><radius>0.07</radius><length>0.28</length></cylinder></geometry>
-          <material><ambient>0.85 0.65 0.12 1</ambient><diffuse>0.85 0.65 0.12 1</diffuse></material>
-        </visual>
-      </link>
-    </model>
-    <model name="corn_r3_05">
-      <static>true</static>
-      <pose>2 2.5 0 0 0 0</pose>
-      <link name="plant">
-        <visual name="stem">
-          <pose>0 0 0.75 0 0 0</pose>
-          <geometry><cylinder><radius>0.045</radius><length>1.5</length></cylinder></geometry>
-          <material><ambient>0.15 0.55 0.10 1</ambient><diffuse>0.15 0.55 0.10 1</diffuse></material>
-        </visual>
-        <visual name="leaf1">
-          <pose>0.20 0 0.72 0 0.45 0</pose>
-          <geometry><box><size>0.55 0.08 0.025</size></box></geometry>
-          <material><ambient>0.04 0.45 0.04 1</ambient><diffuse>0.04 0.45 0.04 1</diffuse></material>
-        </visual>
-        <visual name="leaf2">
-          <pose>-0.20 0 0.95 0 -0.45 0</pose>
-          <geometry><box><size>0.55 0.08 0.025</size></box></geometry>
-          <material><ambient>0.04 0.45 0.04 1</ambient><diffuse>0.04 0.45 0.04 1</diffuse></material>
-        </visual>
-        <visual name="leaf3">
-          <pose>0 0.18 1.15 -0.45 0 1.5708</pose>
-          <geometry><box><size>0.45 0.07 0.025</size></box></geometry>
-          <material><ambient>0.05 0.50 0.05 1</ambient><diffuse>0.05 0.50 0.05 1</diffuse></material>
-        </visual>
-        <visual name="ear">
-          <pose>0.08 0 1.08 0 0.2 0</pose>
-          <geometry><cylinder><radius>0.07</radius><length>0.28</length></cylinder></geometry>
-          <material><ambient>0.85 0.65 0.12 1</ambient><diffuse>0.85 0.65 0.12 1</diffuse></material>
-        </visual>
-      </link>
-    </model>
-    <model name="corn_r3_06">
-      <static>true</static>
-      <pose>4 2.5 0 0 0 0</pose>
-      <link name="plant">
-        <visual name="stem">
-          <pose>0 0 0.75 0 0 0</pose>
-          <geometry><cylinder><radius>0.045</radius><length>1.5</length></cylinder></geometry>
-          <material><ambient>0.15 0.55 0.10 1</ambient><diffuse>0.15 0.55 0.10 1</diffuse></material>
-        </visual>
-        <visual name="leaf1">
-          <pose>0.20 0 0.72 0 0.45 0</pose>
-          <geometry><box><size>0.55 0.08 0.025</size></box></geometry>
-          <material><ambient>0.04 0.45 0.04 1</ambient><diffuse>0.04 0.45 0.04 1</diffuse></material>
-        </visual>
-        <visual name="leaf2">
-          <pose>-0.20 0 0.95 0 -0.45 0</pose>
-          <geometry><box><size>0.55 0.08 0.025</size></box></geometry>
-          <material><ambient>0.04 0.45 0.04 1</ambient><diffuse>0.04 0.45 0.04 1</diffuse></material>
-        </visual>
-        <visual name="leaf3">
-          <pose>0 0.18 1.15 -0.45 0 1.5708</pose>
-          <geometry><box><size>0.45 0.07 0.025</size></box></geometry>
-          <material><ambient>0.05 0.50 0.05 1</ambient><diffuse>0.05 0.50 0.05 1</diffuse></material>
-        </visual>
-        <visual name="ear">
-          <pose>0.08 0 1.08 0 0.2 0</pose>
-          <geometry><cylinder><radius>0.07</radius><length>0.28</length></cylinder></geometry>
-          <material><ambient>0.85 0.65 0.12 1</ambient><diffuse>0.85 0.65 0.12 1</diffuse></material>
-        </visual>
-      </link>
-    </model>
-    <model name="corn_r3_07">
-      <static>true</static>
-      <pose>6 2.5 0 0 0 0</pose>
-      <link name="plant">
-        <visual name="stem">
-          <pose>0 0 0.75 0 0 0</pose>
-          <geometry><cylinder><radius>0.045</radius><length>1.5</length></cylinder></geometry>
-          <material><ambient>0.15 0.55 0.10 1</ambient><diffuse>0.15 0.55 0.10 1</diffuse></material>
-        </visual>
-        <visual name="leaf1">
-          <pose>0.20 0 0.72 0 0.45 0</pose>
-          <geometry><box><size>0.55 0.08 0.025</size></box></geometry>
-          <material><ambient>0.04 0.45 0.04 1</ambient><diffuse>0.04 0.45 0.04 1</diffuse></material>
-        </visual>
-        <visual name="leaf2">
-          <pose>-0.20 0 0.95 0 -0.45 0</pose>
-          <geometry><box><size>0.55 0.08 0.025</size></box></geometry>
-          <material><ambient>0.04 0.45 0.04 1</ambient><diffuse>0.04 0.45 0.04 1</diffuse></material>
-        </visual>
-        <visual name="leaf3">
-          <pose>0 0.18 1.15 -0.45 0 1.5708</pose>
-          <geometry><box><size>0.45 0.07 0.025</size></box></geometry>
-          <material><ambient>0.05 0.50 0.05 1</ambient><diffuse>0.05 0.50 0.05 1</diffuse></material>
-        </visual>
-        <visual name="ear">
-          <pose>0.08 0 1.08 0 0.2 0</pose>
-          <geometry><cylinder><radius>0.07</radius><length>0.28</length></cylinder></geometry>
-          <material><ambient>0.85 0.65 0.12 1</ambient><diffuse>0.85 0.65 0.12 1</diffuse></material>
-        </visual>
-      </link>
-    </model>
+
+    <!-- Quatro talhões 2x2, separados por corredores centrais. -->
+    <include>
+      <uri>model://corn_plant</uri>
+      <name>corn_nw_01</name>
+      <pose>-6.00 4.00 0 0 0 0</pose>
+    </include>
+    <include>
+      <uri>model://corn_plant</uri>
+      <name>corn_nw_02</name>
+      <pose>-5.00 4.00 0 0 0 0</pose>
+    </include>
+    <include>
+      <uri>model://corn_plant</uri>
+      <name>corn_nw_03</name>
+      <pose>-4.00 4.00 0 0 0 0</pose>
+    </include>
+    <include>
+      <uri>model://corn_plant</uri>
+      <name>corn_nw_04</name>
+      <pose>-3.00 4.00 0 0 0 0</pose>
+    </include>
+    <include>
+      <uri>model://corn_plant</uri>
+      <name>corn_nw_05</name>
+      <pose>-2.00 4.00 0 0 0 0</pose>
+    </include>
+    <include>
+      <uri>model://corn_plant</uri>
+      <name>corn_nw_06</name>
+      <pose>-6.00 5.00 0 0 0 0</pose>
+    </include>
+    <include>
+      <uri>model://corn_plant</uri>
+      <name>corn_nw_07</name>
+      <pose>-5.00 5.00 0 0 0 0</pose>
+    </include>
+    <include>
+      <uri>model://corn_plant</uri>
+      <name>corn_nw_08</name>
+      <pose>-4.00 5.00 0 0 0 0</pose>
+    </include>
+    <include>
+      <uri>model://corn_plant</uri>
+      <name>corn_nw_09</name>
+      <pose>-3.00 5.00 0 0 0 0</pose>
+    </include>
+    <include>
+      <uri>model://corn_plant</uri>
+      <name>corn_nw_10</name>
+      <pose>-2.00 5.00 0 0 0 0</pose>
+    </include>
+    <include>
+      <uri>model://corn_plant</uri>
+      <name>corn_nw_11</name>
+      <pose>-6.00 6.00 0 0 0 0</pose>
+    </include>
+    <include>
+      <uri>model://corn_plant</uri>
+      <name>corn_nw_12</name>
+      <pose>-5.00 6.00 0 0 0 0</pose>
+    </include>
+    <include>
+      <uri>model://corn_plant</uri>
+      <name>corn_nw_13</name>
+      <pose>-4.00 6.00 0 0 0 0</pose>
+    </include>
+    <include>
+      <uri>model://corn_plant</uri>
+      <name>corn_nw_14</name>
+      <pose>-3.00 6.00 0 0 0 0</pose>
+    </include>
+    <include>
+      <uri>model://corn_plant</uri>
+      <name>corn_nw_15</name>
+      <pose>-2.00 6.00 0 0 0 0</pose>
+    </include>
+    <include>
+      <uri>model://corn_plant</uri>
+      <name>corn_nw_16</name>
+      <pose>-6.00 7.00 0 0 0 0</pose>
+    </include>
+    <include>
+      <uri>model://corn_plant</uri>
+      <name>corn_nw_17</name>
+      <pose>-5.00 7.00 0 0 0 0</pose>
+    </include>
+    <include>
+      <uri>model://corn_plant</uri>
+      <name>corn_nw_18</name>
+      <pose>-4.00 7.00 0 0 0 0</pose>
+    </include>
+    <include>
+      <uri>model://corn_plant</uri>
+      <name>corn_nw_19</name>
+      <pose>-3.00 7.00 0 0 0 0</pose>
+    </include>
+    <include>
+      <uri>model://corn_plant</uri>
+      <name>corn_nw_20</name>
+      <pose>-2.00 7.00 0 0 0 0</pose>
+    </include>
+    <include>
+      <uri>model://corn_plant</uri>
+      <name>corn_ne_01</name>
+      <pose>2.00 4.00 0 0 0 0</pose>
+    </include>
+    <include>
+      <uri>model://corn_plant</uri>
+      <name>corn_ne_02</name>
+      <pose>3.00 4.00 0 0 0 0</pose>
+    </include>
+    <include>
+      <uri>model://corn_plant</uri>
+      <name>corn_ne_03</name>
+      <pose>4.00 4.00 0 0 0 0</pose>
+    </include>
+    <include>
+      <uri>model://corn_plant</uri>
+      <name>corn_ne_04</name>
+      <pose>5.00 4.00 0 0 0 0</pose>
+    </include>
+    <include>
+      <uri>model://corn_plant</uri>
+      <name>corn_ne_05</name>
+      <pose>6.00 4.00 0 0 0 0</pose>
+    </include>
+    <include>
+      <uri>model://corn_plant</uri>
+      <name>corn_ne_06</name>
+      <pose>2.00 5.00 0 0 0 0</pose>
+    </include>
+    <include>
+      <uri>model://corn_plant</uri>
+      <name>corn_ne_07</name>
+      <pose>3.00 5.00 0 0 0 0</pose>
+    </include>
+    <include>
+      <uri>model://corn_plant</uri>
+      <name>corn_ne_08</name>
+      <pose>4.00 5.00 0 0 0 0</pose>
+    </include>
+    <include>
+      <uri>model://corn_plant</uri>
+      <name>corn_ne_09</name>
+      <pose>5.00 5.00 0 0 0 0</pose>
+    </include>
+    <include>
+      <uri>model://corn_plant</uri>
+      <name>corn_ne_10</name>
+      <pose>6.00 5.00 0 0 0 0</pose>
+    </include>
+    <include>
+      <uri>model://corn_plant</uri>
+      <name>corn_ne_11</name>
+      <pose>2.00 6.00 0 0 0 0</pose>
+    </include>
+    <include>
+      <uri>model://corn_plant</uri>
+      <name>corn_ne_12</name>
+      <pose>3.00 6.00 0 0 0 0</pose>
+    </include>
+    <include>
+      <uri>model://corn_plant</uri>
+      <name>corn_ne_13</name>
+      <pose>4.00 6.00 0 0 0 0</pose>
+    </include>
+    <include>
+      <uri>model://corn_plant</uri>
+      <name>corn_ne_14</name>
+      <pose>5.00 6.00 0 0 0 0</pose>
+    </include>
+    <include>
+      <uri>model://corn_plant</uri>
+      <name>corn_ne_15</name>
+      <pose>6.00 6.00 0 0 0 0</pose>
+    </include>
+    <include>
+      <uri>model://corn_plant</uri>
+      <name>corn_ne_16</name>
+      <pose>2.00 7.00 0 0 0 0</pose>
+    </include>
+    <include>
+      <uri>model://corn_plant</uri>
+      <name>corn_ne_17</name>
+      <pose>3.00 7.00 0 0 0 0</pose>
+    </include>
+    <include>
+      <uri>model://corn_plant</uri>
+      <name>corn_ne_18</name>
+      <pose>4.00 7.00 0 0 0 0</pose>
+    </include>
+    <include>
+      <uri>model://corn_plant</uri>
+      <name>corn_ne_19</name>
+      <pose>5.00 7.00 0 0 0 0</pose>
+    </include>
+    <include>
+      <uri>model://corn_plant</uri>
+      <name>corn_ne_20</name>
+      <pose>6.00 7.00 0 0 0 0</pose>
+    </include>
+    <include>
+      <uri>model://corn_plant</uri>
+      <name>corn_sw_01</name>
+      <pose>-6.00 -7.00 0 0 0 0</pose>
+    </include>
+    <include>
+      <uri>model://corn_plant</uri>
+      <name>corn_sw_02</name>
+      <pose>-5.00 -7.00 0 0 0 0</pose>
+    </include>
+    <include>
+      <uri>model://corn_plant</uri>
+      <name>corn_sw_03</name>
+      <pose>-4.00 -7.00 0 0 0 0</pose>
+    </include>
+    <include>
+      <uri>model://corn_plant</uri>
+      <name>corn_sw_04</name>
+      <pose>-3.00 -7.00 0 0 0 0</pose>
+    </include>
+    <include>
+      <uri>model://corn_plant</uri>
+      <name>corn_sw_05</name>
+      <pose>-2.00 -7.00 0 0 0 0</pose>
+    </include>
+    <include>
+      <uri>model://corn_plant</uri>
+      <name>corn_sw_06</name>
+      <pose>-6.00 -6.00 0 0 0 0</pose>
+    </include>
+    <include>
+      <uri>model://corn_plant</uri>
+      <name>corn_sw_07</name>
+      <pose>-5.00 -6.00 0 0 0 0</pose>
+    </include>
+    <include>
+      <uri>model://corn_plant</uri>
+      <name>corn_sw_08</name>
+      <pose>-4.00 -6.00 0 0 0 0</pose>
+    </include>
+    <include>
+      <uri>model://corn_plant</uri>
+      <name>corn_sw_09</name>
+      <pose>-3.00 -6.00 0 0 0 0</pose>
+    </include>
+    <include>
+      <uri>model://corn_plant</uri>
+      <name>corn_sw_10</name>
+      <pose>-2.00 -6.00 0 0 0 0</pose>
+    </include>
+    <include>
+      <uri>model://corn_plant</uri>
+      <name>corn_sw_11</name>
+      <pose>-6.00 -5.00 0 0 0 0</pose>
+    </include>
+    <include>
+      <uri>model://corn_plant</uri>
+      <name>corn_sw_12</name>
+      <pose>-5.00 -5.00 0 0 0 0</pose>
+    </include>
+    <include>
+      <uri>model://corn_plant</uri>
+      <name>corn_sw_13</name>
+      <pose>-4.00 -5.00 0 0 0 0</pose>
+    </include>
+    <include>
+      <uri>model://corn_plant</uri>
+      <name>corn_sw_14</name>
+      <pose>-3.00 -5.00 0 0 0 0</pose>
+    </include>
+    <include>
+      <uri>model://corn_plant</uri>
+      <name>corn_sw_15</name>
+      <pose>-2.00 -5.00 0 0 0 0</pose>
+    </include>
+    <include>
+      <uri>model://corn_plant</uri>
+      <name>corn_sw_16</name>
+      <pose>-6.00 -4.00 0 0 0 0</pose>
+    </include>
+    <include>
+      <uri>model://corn_plant</uri>
+      <name>corn_sw_17</name>
+      <pose>-5.00 -4.00 0 0 0 0</pose>
+    </include>
+    <include>
+      <uri>model://corn_plant</uri>
+      <name>corn_sw_18</name>
+      <pose>-4.00 -4.00 0 0 0 0</pose>
+    </include>
+    <include>
+      <uri>model://corn_plant</uri>
+      <name>corn_sw_19</name>
+      <pose>-3.00 -4.00 0 0 0 0</pose>
+    </include>
+    <include>
+      <uri>model://corn_plant</uri>
+      <name>corn_sw_20</name>
+      <pose>-2.00 -4.00 0 0 0 0</pose>
+    </include>
+    <include>
+      <uri>model://corn_plant</uri>
+      <name>corn_se_01</name>
+      <pose>2.00 -7.00 0 0 0 0</pose>
+    </include>
+    <include>
+      <uri>model://corn_plant</uri>
+      <name>corn_se_02</name>
+      <pose>3.00 -7.00 0 0 0 0</pose>
+    </include>
+    <include>
+      <uri>model://corn_plant</uri>
+      <name>corn_se_03</name>
+      <pose>4.00 -7.00 0 0 0 0</pose>
+    </include>
+    <include>
+      <uri>model://corn_plant</uri>
+      <name>corn_se_04</name>
+      <pose>5.00 -7.00 0 0 0 0</pose>
+    </include>
+    <include>
+      <uri>model://corn_plant</uri>
+      <name>corn_se_05</name>
+      <pose>6.00 -7.00 0 0 0 0</pose>
+    </include>
+    <include>
+      <uri>model://corn_plant</uri>
+      <name>corn_se_06</name>
+      <pose>2.00 -6.00 0 0 0 0</pose>
+    </include>
+    <include>
+      <uri>model://corn_plant</uri>
+      <name>corn_se_07</name>
+      <pose>3.00 -6.00 0 0 0 0</pose>
+    </include>
+    <include>
+      <uri>model://corn_plant</uri>
+      <name>corn_se_08</name>
+      <pose>4.00 -6.00 0 0 0 0</pose>
+    </include>
+    <include>
+      <uri>model://corn_plant</uri>
+      <name>corn_se_09</name>
+      <pose>5.00 -6.00 0 0 0 0</pose>
+    </include>
+    <include>
+      <uri>model://corn_plant</uri>
+      <name>corn_se_10</name>
+      <pose>6.00 -6.00 0 0 0 0</pose>
+    </include>
+    <include>
+      <uri>model://corn_plant</uri>
+      <name>corn_se_11</name>
+      <pose>2.00 -5.00 0 0 0 0</pose>
+    </include>
+    <include>
+      <uri>model://corn_plant</uri>
+      <name>corn_se_12</name>
+      <pose>3.00 -5.00 0 0 0 0</pose>
+    </include>
+    <include>
+      <uri>model://corn_plant</uri>
+      <name>corn_se_13</name>
+      <pose>4.00 -5.00 0 0 0 0</pose>
+    </include>
+    <include>
+      <uri>model://corn_plant</uri>
+      <name>corn_se_14</name>
+      <pose>5.00 -5.00 0 0 0 0</pose>
+    </include>
+    <include>
+      <uri>model://corn_plant</uri>
+      <name>corn_se_15</name>
+      <pose>6.00 -5.00 0 0 0 0</pose>
+    </include>
+    <include>
+      <uri>model://corn_plant</uri>
+      <name>corn_se_16</name>
+      <pose>2.00 -4.00 0 0 0 0</pose>
+    </include>
+    <include>
+      <uri>model://corn_plant</uri>
+      <name>corn_se_17</name>
+      <pose>3.00 -4.00 0 0 0 0</pose>
+    </include>
+    <include>
+      <uri>model://corn_plant</uri>
+      <name>corn_se_18</name>
+      <pose>4.00 -4.00 0 0 0 0</pose>
+    </include>
+    <include>
+      <uri>model://corn_plant</uri>
+      <name>corn_se_19</name>
+      <pose>5.00 -4.00 0 0 0 0</pose>
+    </include>
+    <include>
+      <uri>model://corn_plant</uri>
+      <name>corn_se_20</name>
+      <pose>6.00 -4.00 0 0 0 0</pose>
+    </include>
   </world>
 </sdf>
