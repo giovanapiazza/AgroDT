@@ -13,7 +13,7 @@ python3 scripts/setup_all.py
 python3 scripts/start_simulation.py
 ```
 
-Abre somente o mundo `AgroDTField`, já com 3 fileiras de milho.
+Abre somente o mundo `AgroDTField`, já com 4 talhões de milho em disposição 2×2, corredores centrais, solo marrom e muretas escuras.
 
 ## Husky, opcional e separado
 
