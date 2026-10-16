@@ -4,7 +4,7 @@ Simulação preparada para Ubuntu 24.04, ROS 2 Jazzy e Gazebo Harmonic.
 
 A inicialização foi desacoplada:
 
-- **Gazebo** abre sozinho e já carrega o campo com 3 fileiras de milho;
+- **Gazebo** abre sozinho e já carrega um campo agrícola com 4 talhões de milho em disposição 2×2, separados por corredores;
 - **Husky A200** é inserido apenas quando `start_husky.py` é executado;
 - **PX4 X500** é inserido apenas quando `start_drone.py` é executado;
 - o **executor de missões** recebe JSON por ROS 2 e envia `TrajectorySetpoint` ao PX4.
@@ -55,7 +55,7 @@ Terminal 1:
 python3 scripts/start_simulation.py
 ```
 
-O mundo `AgroDTField` abre com chão agrícola e **3 fileiras de milho, 7 plantas por fileira**.
+O mundo `AgroDTField` abre com solo marrom, muretas escuras e **4 talhões de milho em disposição 2×2**, separados por corredores centrais. Cada talhão possui 20 plantas, totalizando 80 plantas.
 
 Esse comando não inicia Husky nem drone.
 
@@ -113,7 +113,7 @@ Em outro terminal:
 python3 scripts/send_drone_mission.py config/mission_test.json
 ```
 
-A missão de exemplo sobe o X500 e faz uma varredura em zigue-zague sobre as três fileiras, aproximadamente 4 m acima da origem local, e ao terminar solicita pouso.
+A missão de exemplo sobe o X500 e faz uma varredura sobre os quatro talhões, aproximadamente 4 m acima da origem local, e ao terminar solicita pouso.
 
 Os waypoints usam o frame local NED do PX4:
 
@@ -121,7 +121,7 @@ Os waypoints usam o frame local NED do PX4:
 - `z` negativo: altura acima da origem;
 - `yaw`: orientação em radianos.
 
-Como o X500 é criado no lado sudoeste do campo, os waypoints do arquivo de teste foram escolhidos para coincidir visualmente com as três fileiras.
+Como o X500 é criado no lado sudoeste do campo, os waypoints do arquivo de teste foram ajustados para cobrir os quatro talhões e os corredores do novo layout.
 
 ## 7. Formato da missão
 
