@@ -1,7 +1,7 @@
 <?xml version="1.0"?>
 <package format="3">
   <name>husky_isobus_bridge</name>
-  <version>2.0.0</version>
+  <version>2.1.0</version>
   <description>Ponte mínima Husky A200 ROS 2 Odometry para SocketCAN/vcan0.</description>
   <maintainer email="noreply@example.invalid">Projeto Husky ISOBUS</maintainer>
   <license>MIT</license>
@@ -10,6 +10,8 @@
 
   <exec_depend>rclpy</exec_depend>
   <exec_depend>nav_msgs</exec_depend>
+  <exec_depend>geometry_msgs</exec_depend>
+  <exec_depend>std_msgs</exec_depend>
   <exec_depend>python3-yaml</exec_depend>
   <exec_depend>python3-can</exec_depend>
 
