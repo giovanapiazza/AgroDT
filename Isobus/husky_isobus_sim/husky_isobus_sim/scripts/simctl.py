@@ -590,7 +590,7 @@ def cmd_start_simulation(_args) -> int:
             "launch",
             "ros_gz_sim",
             "gz_sim.launch.py",
-            f"gz_args=-r -v 4 {sdf}",
+            f"gz_args:=-r -v 4 {sdf}",
         ],
         cwd=ROOT,
         env=env,
