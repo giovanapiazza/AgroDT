@@ -208,3 +208,29 @@ python3 scripts/send_drone_mission.py config/mission_test.json
 ```
 
 O Husky é opcional e pode ser iniciado em outro terminal, depois do Gazebo.
+
+
+## Reparar PX4 sem gz_bridge
+
+Se `start_drone.py` informar que a build do PX4 não contém `gz_bridge`, execute uma vez:
+
+```bash
+python3 scripts/repair_px4.py
+```
+
+Esse comando sincroniza o PX4 v1.17.0, executa o instalador oficial de dependências para Ubuntu/Gazebo Harmonic, remove a configuração SITL antiga e recompila `px4_sitl`.
+
+Depois:
+
+```bash
+python3 scripts/start_drone.py
+```
+
+O erro fatal correspondente é:
+
+```text
+px4-rc.gzsim: gz_bridge: not found
+ERROR [init] gz_bridge failed to start and spawn model
+```
+
+Os avisos sobre parâmetros `SIM_GZ_*` que podem aparecer antes disso não são a causa desse encerramento.
