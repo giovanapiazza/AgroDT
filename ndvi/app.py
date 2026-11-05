@@ -46,7 +46,7 @@ def connection():
     return db
 
 def init_db():
-    for sub in ("entrada", "processadas", "erros", "dados"):
+    for sub in ("entrada", "analisadas", "processadas", "erros", "dados"):
         (ROOT / sub).mkdir(parents=True, exist_ok=True)
     with connection() as db:
         db.execute("""CREATE TABLE IF NOT EXISTS captures (
@@ -162,7 +162,7 @@ def process_capture(capture_id):
         raise ValueError("Captura nao encontrada ou ja processada")
     flight_id = record["flight_id"]
     inbox = ROOT / "entrada" / flight_id / capture_id
-    output = ROOT / "processadas" / flight_id / capture_id
+    output = ROOT / "analisadas" / flight_id / capture_id
     failed = ROOT / "erros" / flight_id / capture_id
     start = time.perf_counter()
     with connection() as db:
@@ -332,7 +332,9 @@ class Handler(BaseHTTPRequestHandler):
                 _, capture_id, filename = parts
                 capture = get_capture(capture_id) if SAFE.fullmatch(capture_id) else None
                 if capture and capture["status"] == "processed":
-                    folder = ROOT / "processadas" / capture["flight_id"] / capture_id
+                    folder = ROOT / "analisadas" / capture["flight_id"] / capture_id
+                    if not folder.exists():
+                        folder = ROOT / "processadas" / capture["flight_id"] / capture_id
                     whitelist = {"ndvi_mapa.png", "mapa_areas_atencao.png", "mascara_atencao.png", "resumo.json", "areas_atencao.json"}
                     if filename in whitelist:
                         target = folder / filename
