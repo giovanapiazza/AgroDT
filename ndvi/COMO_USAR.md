@@ -101,3 +101,16 @@ Capturas antigas em `armazenamento/processadas/` permanecem legíveis no painel.
 ```bash
 python -m unittest discover -s tests -v
 ```
+
+
+## Executar lotes diferentes sem apagar o histórico
+
+Use uma semente (`--seed`) e um voo (`--flight-id`) diferentes em cada execução:
+
+```bash
+python simular_drone.py --quantidade 100 --flight-id voo_01 --seed 1 --intervalo 0.2
+python simular_drone.py --quantidade 100 --flight-id voo_02 --seed 2 --intervalo 0.2
+python simular_drone.py --quantidade 100 --flight-id voo_03 --seed 3 --intervalo 0.2
+```
+
+Cada execução utiliza novos IDs de captura; os resultados se acumulam em `armazenamento/analisadas/voo_01/`, `voo_02/` e `voo_03/`. A semente torna a geração reprodutível para um mesmo número de captura e permite variar os conjuntos sintéticos. Os dados sintéticos não substituem pares de imagens reais RED/NIR.
