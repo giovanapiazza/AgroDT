@@ -31,12 +31,12 @@ def pares_reais(origem):
     return pares
 
 
-def imagem_sintetica(numero, largura=160, altura=120):
+def imagem_sintetica(numero, largura=160, altura=120, seed=0):
     """Dados sintéticos para teste, não são imagens reais de drone."""
-    rng = random.Random(numero)
+    rng = random.Random(seed * 1_000_003 + numero)
     yy, xx = np.ogrid[:altura, :largura]
-    red = np.full((altura, largura), 9000, dtype=np.uint16)
-    nir = np.full((altura, largura), 51000, dtype=np.uint16)
+    red = np.full((altura, largura), 9000 + rng.randrange(0, 1500), dtype=np.uint16)
+    nir = np.full((altura, largura), 49500 + rng.randrange(0, 2500), dtype=np.uint16)
     for _ in range(numero % 5):
         cx, cy = rng.randrange(15, largura - 15), rng.randrange(15, altura - 15)
         raio = rng.randrange(7, 19)
@@ -77,6 +77,7 @@ def main():
     parser = argparse.ArgumentParser(description="Simula envios de capturas de drone para NDVI")
     parser.add_argument("--quantidade", type=int, default=100)
     parser.add_argument("--intervalo", type=float, default=0.1)
+    parser.add_argument("--seed", type=int, default=0, help="Varia o conjunto sintetico; use 1, 2, 3... para voos diferentes")
     parser.add_argument("--pi", default="http://127.0.0.1:8765")
     parser.add_argument("--api-key", default=os.getenv("AGRODT_API_KEY"))
     parser.add_argument("--flight-id", default="voo_simulado")
@@ -101,7 +102,7 @@ def main():
             red, nir = r.read_bytes(), n.read_bytes()
             extensoes = (r.suffix.lower(), n.suffix.lower())
         else:
-            red, nir = imagem_sintetica(i + 1)
+            red, nir = imagem_sintetica(i + 1, seed=args.seed)
             extensoes = (".png", ".png")
         try:
             codigo, resposta = enviar(args.pi, args.api_key, args.flight_id, identificador, red, nir, extensoes)
