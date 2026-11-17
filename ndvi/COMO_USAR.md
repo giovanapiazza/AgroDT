@@ -158,3 +158,26 @@ Os TIFFs Sequoia são bandas brutas de sensor, sem calibração radiométrica ne
 ```bash
 python -m unittest discover -s tests -v
 ```
+
+
+## Interface de importacao recolhida e painel vazio
+
+A secao **Adicionar imagens** inicia fechada. Clique nela para abrir e escolha uma das opcoes:
+- **Imagens reais (ZIP Sequoia)**: upload de arquivo ZIP com pares `*_RED.TIF` / `*_NIR.TIF`.
+- **Par RED/NIR**: upload de duas bandas individuais em PNG ou TIFF.
+
+A chave API usada pelo servidor e requerida para ambos os envios.
+
+Para limpar o painel e **arquivar** o historico anterior sem apagar os arquivos, pare o servidor e os simuladores e execute:
+
+```bash
+cd ~/AgroDT/ndvi
+source .venv/bin/activate
+python limpar_historico.py
+export AGRODT_API_KEY='agrodt-teste-123'
+python app.py
+```
+
+O comando renomeia a pasta atual `armazenamento/` para um backup com data e hora. No proximo inicio, o servidor cria um novo SQLite vazio e as pastas de trabalho. O script respeita `AGRODT_NDVI_DATA`, caso o armazenamento esteja configurado em outro local.
+
+**Atenção:** nunca execute `limpar_historico.py` com `app.py` ou o simulador em funcionamento. O `git pull` sozinho nao altera o banco SQLite local e nao zera o painel.
