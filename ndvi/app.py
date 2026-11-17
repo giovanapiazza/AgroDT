@@ -2,6 +2,8 @@
 """AgroDT NDVI: recepcao HTTP, analise, SQLite e interface web."""
 from __future__ import annotations
 import argparse
+from io import BytesIO
+import zipfile
 from collections import deque
 from datetime import datetime, timezone
 from email.parser import BytesParser
@@ -27,6 +29,8 @@ API_KEY = os.environ.get("AGRODT_API_KEY", "")
 SAFE = re.compile(r"^[A-Za-z0-9_-]{1,64}$")
 EXT = {".png", ".tif", ".tiff"}
 MAX_UPLOAD = 60 * 1024 * 1024
+MAX_ZIP_UPLOAD = 128 * 1024 * 1024
+MAX_ZIP_UNPACKED = 300 * 1024 * 1024
 MAX_PIXELS = 8_000_000
 LOW_NDVI = float(os.environ.get("AGRODT_NDVI_LIMIAR", "0.40"))
 MIN_REGION = max(1, int(os.environ.get("AGRODT_NDVI_MIN_PIXELS", "40")))
@@ -117,6 +121,21 @@ def ndvi_image(ndvi):
     rgb[~valid] = [68, 73, 83]
     return Image.fromarray(rgb, "RGB")
 
+def heatmap_ndvi(ndvi):
+    """Mapa de calor por pixel: vermelho (baixo), amarelo (medio), verde (alto)."""
+    valid = np.isfinite(ndvi)
+    points = np.array([-1.0, 0.0, 0.2, 0.4, 0.6, 0.8, 1.0])
+    colors = np.array([
+        [115, 35, 65], [220, 60, 50], [244, 114, 50],
+        [246, 205, 62], [130, 200, 70], [28, 145, 78], [8, 96, 70]
+    ], dtype=np.float32)
+    values = np.nan_to_num(ndvi, nan=-1.0).clip(-1, 1)
+    rgb = np.stack([np.interp(values, points, colors[:, index])
+                    for index in range(3)], axis=-1).astype(np.uint8)
+    rgb[~valid] = [68, 73, 83]
+    return Image.fromarray(rgb, "RGB")
+
+
 def detect_regions(ndvi):
     """Agrupamentos de NDVI baixo sao alertas exploratorios, nao diagnosticos."""
     valid = np.isfinite(ndvi)
@@ -189,6 +208,7 @@ def process_capture(capture_id):
                    "note": "NDVI baixo sinaliza possivel estresse, nao comprova deficiencia de nutrientes."}
         np.save(inbox / "ndvi_valores.npy", ndvi)
         ndvi_image(ndvi).save(inbox / "ndvi_mapa.png")
+        heatmap_ndvi(ndvi).save(inbox / "heatmap_ndvi.png")
         Image.fromarray((attention * 255).astype(np.uint8), "L").save(inbox / "mascara_atencao.png")
         colored = ndvi_image(ndvi)
         draw = ImageDraw.Draw(colored)
@@ -252,6 +272,50 @@ def parse_multipart(content_type, content):
         raise ValueError("Envie um par RED + NIR nao vazio")
     return fields, files
 
+def import_sequoia_zip(payload, flight_id):
+    """Importa pares RED/NIR do ZIP Sequoia sem descartar as outras bandas originais."""
+    flight_id = safe_id(flight_id, "flight_id")
+    imported, failures = [], []
+    with zipfile.ZipFile(BytesIO(payload)) as archive:
+        members = [info for info in archive.infolist() if not info.is_dir()]
+        if len(members) > 1000 or sum(x.file_size for x in members) > MAX_ZIP_UNPACKED:
+            raise ValueError("ZIP muito grande ou com arquivos demais")
+        groups = {}
+        for info in members:
+            name = Path(info.filename).name
+            match = re.fullmatch(r"(.+)_(RED|NIR)\\.(TIF|TIFF)", name, re.I)
+            if match:
+                prefix, band = match.group(1), match.group(2).lower()
+                if len(prefix) > 120:
+                    continue
+                groups.setdefault(prefix, {})[band] = info
+        valid_groups = [(prefix, pair) for prefix, pair in sorted(groups.items()) if set(pair) == {"red", "nir"}]
+        if not valid_groups:
+            raise ValueError("Nenhum par *_RED.TIF e *_NIR.TIF encontrado no ZIP")
+        if len(valid_groups) > 100:
+            raise ValueError("Limite de 100 capturas por ZIP")
+        for prefix, pair in valid_groups:
+            capture_id = "sq_" + uuid.uuid4().hex[:16]
+            inbox = ROOT / "entrada" / flight_id / capture_id
+            try:
+                data = {}
+                for band, info in pair.items():
+                    if info.file_size > MAX_UPLOAD:
+                        raise ValueError(f"{prefix}: banda muito grande")
+                    data[band] = archive.read(info)
+                add_capture(capture_id, flight_id)
+                inbox.mkdir(parents=True, exist_ok=False)
+                for band in ("red", "nir"):
+                    (inbox / f"{band}.tif").write_bytes(data[band])
+                summary = process_capture(capture_id)
+                imported.append({"capture_id": capture_id, "source": prefix, "mean_ndvi": summary["mean_ndvi"]})
+            except Exception as exc:
+                failures.append({"source": prefix, "error": str(exc)})
+                print("Falha ao importar captura Sequoia:", prefix, exc, flush=True)
+    return {"processed": len(imported), "failed": len(failures), "captures": imported, "errors": failures,
+            "note": "NDVI bruto; imagens Sequoia exigem calibracao radiometrica e alinhamento para uso agronomico."}
+
+
 def list_captures(limit=200):
     with connection() as db:
         return [dict(row) for row in db.execute(
@@ -274,7 +338,7 @@ def register_manual_pairs():
             if not folder.is_dir() or not SAFE.fullmatch(folder.name) or get_capture(folder.name):
                 continue
             images = [p for p in folder.iterdir() if p.is_file() and p.suffix.lower() in EXT]
-            if {p.stem.lower() for p in images} < {"red", "nir"}:
+            if not {"red", "nir"} <= {p.stem.lower() for p in images}:
                 continue
             if any(time.time() - p.stat().st_mtime < 2 for p in images):
                 continue
@@ -335,7 +399,7 @@ class Handler(BaseHTTPRequestHandler):
                     folder = ROOT / "analisadas" / capture["flight_id"] / capture_id
                     if not folder.exists():
                         folder = ROOT / "processadas" / capture["flight_id"] / capture_id
-                    whitelist = {"ndvi_mapa.png", "mapa_areas_atencao.png", "mascara_atencao.png", "resumo.json", "areas_atencao.json"}
+                    whitelist = {"ndvi_mapa.png", "heatmap_ndvi.png", "mapa_areas_atencao.png", "mascara_atencao.png", "resumo.json", "areas_atencao.json"}
                     if filename in whitelist:
                         target = folder / filename
                     elif filename in ("red", "nir"):
@@ -348,12 +412,21 @@ class Handler(BaseHTTPRequestHandler):
         return self.json_response(404, {"error": "Recurso nao encontrado"})
 
     def do_POST(self):
-        if urlsplit(self.path).path != "/api/v1/captures":
+        route = urlsplit(self.path).path
+        if route not in ("/api/v1/captures", "/api/v1/import-zip"):
             return self.json_response(404, {"error": "Rota nao encontrada"})
         if not API_KEY or not hmac.compare_digest(self.headers.get("X-API-Key", ""), API_KEY):
             return self.json_response(401, {"error": "Chave API ausente ou invalida"})
         try:
             size = int(self.headers.get("Content-Length", "0"))
+            if route == "/api/v1/import-zip":
+                if size <= 0 or size > MAX_ZIP_UPLOAD:
+                    return self.json_response(413, {"error": "ZIP vazio ou acima de 128 MiB"})
+                if self.headers.get("Content-Type", "").split(";")[0].lower() not in ("application/zip", "application/octet-stream"):
+                    return self.json_response(415, {"error": "Envie ZIP com application/zip"})
+                flight = safe_id(self.headers.get("X-Flight-ID", "sequoia_real"), "flight_id")
+                result = import_sequoia_zip(self.rfile.read(size), flight)
+                return self.json_response(201 if result["processed"] else 422, result)
             if size <= 0 or size > MAX_UPLOAD:
                 return self.json_response(413, {"error": "Requisicao vazia ou acima de 60 MiB"})
             fields, files = parse_multipart(self.headers.get("Content-Type", ""), self.rfile.read(size))
@@ -370,7 +443,7 @@ class Handler(BaseHTTPRequestHandler):
             return self.json_response(201, {"status": "processed", **summary})
         except sqlite3.IntegrityError:
             return self.json_response(409, {"error": "capture_id ja cadastrado"})
-        except (ValueError, OSError) as exc:
+        except (ValueError, OSError, zipfile.BadZipFile) as exc:
             return self.json_response(422, {"error": str(exc)})
         except Exception as exc:
             print("Falha no processamento:", exc, flush=True)
