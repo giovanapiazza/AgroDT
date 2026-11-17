@@ -273,7 +273,7 @@ def parse_multipart(content_type, content):
     return fields, files
 
 def import_sequoia_zip(payload, flight_id):
-    """Importa pares RED/NIR do ZIP Sequoia sem descartar as outras bandas originais."""
+    """Importa pares RED/NIR do ZIP Sequoia, sem alterar o arquivo ZIP original."""
     flight_id = safe_id(flight_id, "flight_id")
     imported, failures = [], []
     with zipfile.ZipFile(BytesIO(payload)) as archive:
@@ -283,7 +283,7 @@ def import_sequoia_zip(payload, flight_id):
         groups = {}
         for info in members:
             name = Path(info.filename).name
-            match = re.fullmatch(r"(.+)_(RED|NIR)\\.(TIF|TIFF)", name, re.I)
+            match = re.fullmatch(r"(.+)_(RED|NIR)\.(TIF|TIFF)", name, re.I)
             if match:
                 prefix, band = match.group(1), match.group(2).lower()
                 if len(prefix) > 120:
