@@ -334,8 +334,8 @@ def import_multiband(payload, flight_id, ext, red_index, nir_index):
         raise ValueError("Use TIFF ou JP2 multibanda")
     if red_index == nir_index:
         raise ValueError("Selecione bandas RED e NIR distintas")
-    red = extract_single_band(payload, ext, red_index)
-    nir = extract_single_band(payload, ext, nir_index)
+    red = extract_single_band(payload, ext, red_index, force_raster=True)
+    nir = extract_single_band(payload, ext, nir_index, force_raster=True)
     if red.shape != nir.shape:
         raise ValueError("As bandas precisam ter as mesmas dimensoes")
     capture_id = "multi_" + uuid.uuid4().hex[:16]
