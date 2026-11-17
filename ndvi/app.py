@@ -121,6 +121,18 @@ def ndvi_image(ndvi):
     rgb[~valid] = [68, 73, 83]
     return Image.fromarray(rgb, "RGB")
 
+def band_preview(band):
+    """Previa PNG de contraste ajustado para visualizar TIFF de 16 bits no navegador."""
+    good = band[np.isfinite(band)]
+    if not good.size:
+        return Image.fromarray(np.zeros(band.shape, dtype=np.uint8), "L")
+    low, high = np.percentile(good, [2, 98])
+    if high <= low:
+        high = low + 1
+    values = np.clip((band - low) / (high - low), 0, 1)
+    return Image.fromarray((np.nan_to_num(values) * 255).astype(np.uint8), "L")
+
+
 def heatmap_ndvi(ndvi):
     """Mapa de calor por pixel: vermelho (baixo), amarelo (medio), verde (alto)."""
     valid = np.isfinite(ndvi)
@@ -193,6 +205,8 @@ def process_capture(capture_id):
             raise ValueError("Par RED/NIR incompleto")
         red, nir = read_band(redfile), read_band(nirfile)
         ndvi = calculate_ndvi(red, nir)
+        band_preview(red).save(inbox / "red_preview.png")
+        band_preview(nir).save(inbox / "nir_preview.png")
         valid = np.isfinite(ndvi)
         if not valid.any():
             raise ValueError("Nao existem pixels NDVI validos")
@@ -399,7 +413,7 @@ class Handler(BaseHTTPRequestHandler):
                     folder = ROOT / "analisadas" / capture["flight_id"] / capture_id
                     if not folder.exists():
                         folder = ROOT / "processadas" / capture["flight_id"] / capture_id
-                    whitelist = {"ndvi_mapa.png", "heatmap_ndvi.png", "mapa_areas_atencao.png", "mascara_atencao.png", "resumo.json", "areas_atencao.json"}
+                    whitelist = {"red_preview.png", "nir_preview.png", "ndvi_mapa.png", "heatmap_ndvi.png", "mapa_areas_atencao.png", "mascara_atencao.png", "resumo.json", "areas_atencao.json"}
                     if filename in whitelist:
                         target = folder / filename
                     elif filename in ("red", "nir"):
