@@ -143,11 +143,11 @@ def read_zip(payload):
     return found
 
 
-def extract_single_band(payload, ext, band_index=1):
+def extract_single_band(payload, ext, band_index=1, force_raster=False):
     """Le banda única com Pillow; opcionalmente Rasterio para JP2 e multibanda."""
     if not 1 <= band_index <= 64:
         raise ValueError("Indice de banda deve estar entre 1 e 64")
-    if ext.lower() in (".jp2", ".j2k") or band_index > 1:
+    if force_raster or ext.lower() in (".jp2", ".j2k") or band_index > 1:
         try:
             import rasterio
             from rasterio.io import MemoryFile
