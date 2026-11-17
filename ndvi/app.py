@@ -22,6 +22,7 @@ import uuid
 from urllib.parse import unquote, urlsplit
 import numpy as np
 from PIL import Image, ImageDraw
+from image_importer import find_pairs, read_zip, extract_single_band, make_tiff
 
 HERE = Path(__file__).resolve().parent
 ROOT = Path(os.environ.get("AGRODT_NDVI_DATA", HERE / "armazenamento")).resolve()
@@ -286,48 +287,66 @@ def parse_multipart(content_type, content):
         raise ValueError("Envie um par RED + NIR nao vazio")
     return fields, files
 
-def import_sequoia_zip(payload, flight_id):
-    """Importa pares RED/NIR do ZIP Sequoia, sem alterar o arquivo ZIP original."""
+def import_generic_zip(payload, flight_id, profile="auto"):
+    """Identifica e processa pares RED/NIR de arquivos ZIP de sensores distintos."""
     flight_id = safe_id(flight_id, "flight_id")
+    files = read_zip(payload)
+    pairs, warnings = find_pairs(files, profile=profile)
+    if len(pairs) > 100:
+        raise ValueError("Limite de 100 pares por ZIP")
+    if not pairs:
+        raise ValueError("; ".join(warnings))
     imported, failures = [], []
-    with zipfile.ZipFile(BytesIO(payload)) as archive:
-        members = [info for info in archive.infolist() if not info.is_dir()]
-        if len(members) > 1000 or sum(x.file_size for x in members) > MAX_ZIP_UNPACKED:
-            raise ValueError("ZIP muito grande ou com arquivos demais")
-        groups = {}
-        for info in members:
-            name = Path(info.filename).name
-            match = re.fullmatch(r"(.+)_(RED|NIR)\.(TIF|TIFF)", name, re.I)
-            if match:
-                prefix, band = match.group(1), match.group(2).lower()
-                if len(prefix) > 120:
-                    continue
-                groups.setdefault(prefix, {})[band] = info
-        valid_groups = [(prefix, pair) for prefix, pair in sorted(groups.items()) if set(pair) == {"red", "nir"}]
-        if not valid_groups:
-            raise ValueError("Nenhum par *_RED.TIF e *_NIR.TIF encontrado no ZIP")
-        if len(valid_groups) > 100:
-            raise ValueError("Limite de 100 capturas por ZIP")
-        for prefix, pair in valid_groups:
-            capture_id = "sq_" + uuid.uuid4().hex[:16]
-            inbox = ROOT / "entrada" / flight_id / capture_id
-            try:
-                data = {}
-                for band, info in pair.items():
-                    if info.file_size > MAX_UPLOAD:
-                        raise ValueError(f"{prefix}: banda muito grande")
-                    data[band] = archive.read(info)
-                add_capture(capture_id, flight_id)
-                inbox.mkdir(parents=True, exist_ok=False)
-                for band in ("red", "nir"):
-                    (inbox / f"{band}.tif").write_bytes(data[band])
-                summary = process_capture(capture_id)
-                imported.append({"capture_id": capture_id, "source": prefix, "mean_ndvi": summary["mean_ndvi"]})
-            except Exception as exc:
-                failures.append({"source": prefix, "error": str(exc)})
-                print("Falha ao importar captura Sequoia:", prefix, exc, flush=True)
-    return {"processed": len(imported), "failed": len(failures), "captures": imported, "errors": failures,
-            "note": "NDVI bruto; imagens Sequoia exigem calibracao radiometrica e alinhamento para uso agronomico."}
+    for pair in pairs:
+        capture_id = "img_" + uuid.uuid4().hex[:16]
+        inbox = ROOT / "entrada" / flight_id / capture_id
+        try:
+            red_name, nir_name = pair.red_name, pair.nir_name
+            red = extract_single_band(files[red_name], Path(red_name).suffix)
+            nir = extract_single_band(files[nir_name], Path(nir_name).suffix)
+            if red.shape != nir.shape:
+                raise ValueError("RED e NIR precisam ter mesmas dimensoes; verifique alinhamento")
+            add_capture(capture_id, flight_id)
+            inbox.mkdir(parents=True, exist_ok=False)
+            (inbox / "red.tif").write_bytes(make_tiff(red))
+            (inbox / "nir.tif").write_bytes(make_tiff(nir))
+            summary = process_capture(capture_id)
+            imported.append({"capture_id": capture_id, "source": pair.capture,
+                             "red": red_name, "nir": nir_name,
+                             "mean_ndvi": summary["mean_ndvi"]})
+        except Exception as exc:
+            failures.append({"source": pair.capture, "error": str(exc)})
+            print("Falha ao importar par:", pair.capture, exc, flush=True)
+    return {"processed": len(imported), "failed": len(failures),
+            "captures": imported, "errors": failures, "warnings": warnings,
+            "note": "Importacao automatica nao garante alinhamento ou calibracao; confira antes de interpretar NDVI."}
+
+
+def import_sequoia_zip(payload, flight_id):
+    """Mantem API de testes e codigo anteriores para ZIP Sequoia."""
+    return import_generic_zip(payload, flight_id, profile="sequoia")
+
+
+def import_multiband(payload, flight_id, ext, red_index, nir_index):
+    """Extrai as bandas escolhidas explicitamente de um GeoTIFF/JP2 multibanda."""
+    flight_id = safe_id(flight_id, "flight_id")
+    if ext.lower() not in (".tif", ".tiff", ".jp2", ".j2k"):
+        raise ValueError("Use TIFF ou JP2 multibanda")
+    if red_index == nir_index:
+        raise ValueError("Selecione bandas RED e NIR distintas")
+    red = extract_single_band(payload, ext, red_index)
+    nir = extract_single_band(payload, ext, nir_index)
+    if red.shape != nir.shape:
+        raise ValueError("As bandas precisam ter as mesmas dimensoes")
+    capture_id = "multi_" + uuid.uuid4().hex[:16]
+    add_capture(capture_id, flight_id)
+    inbox = ROOT / "entrada" / flight_id / capture_id
+    inbox.mkdir(parents=True, exist_ok=False)
+    (inbox / "red.tif").write_bytes(make_tiff(red))
+    (inbox / "nir.tif").write_bytes(make_tiff(nir))
+    summary = process_capture(capture_id)
+    return {"status": "processed", "capture_id": capture_id, **summary,
+            "note": "Bandas selecionadas pelo usuario. Calibracao e alinhamento nao foram verificados."}
 
 
 def list_captures(limit=200):
@@ -427,19 +446,34 @@ class Handler(BaseHTTPRequestHandler):
 
     def do_POST(self):
         route = urlsplit(self.path).path
-        if route not in ("/api/v1/captures", "/api/v1/import-zip"):
+        if route not in ("/api/v1/captures", "/api/v1/import-zip", "/api/v1/import-multiband"):
             return self.json_response(404, {"error": "Rota nao encontrada"})
         if not API_KEY or not hmac.compare_digest(self.headers.get("X-API-Key", ""), API_KEY):
             return self.json_response(401, {"error": "Chave API ausente ou invalida"})
         try:
             size = int(self.headers.get("Content-Length", "0"))
+            if route == "/api/v1/import-multiband":
+                if size <= 0 or size > MAX_UPLOAD:
+                    return self.json_response(413, {"error": "Arquivo vazio ou acima de 60 MiB"})
+                profile_flight = safe_id(self.headers.get("X-Flight-ID", "multibanda"), "flight_id")
+                ext = self.headers.get("X-File-Extension", ".tif").lower()
+                try:
+                    red_index = int(self.headers.get("X-Red-Band", "0"))
+                    nir_index = int(self.headers.get("X-Nir-Band", "0"))
+                except ValueError as exc:
+                    raise ValueError("Indices de banda devem ser inteiros") from exc
+                result = import_multiband(self.rfile.read(size), profile_flight, ext, red_index, nir_index)
+                return self.json_response(201, result)
             if route == "/api/v1/import-zip":
                 if size <= 0 or size > MAX_ZIP_UPLOAD:
                     return self.json_response(413, {"error": "ZIP vazio ou acima de 128 MiB"})
                 if self.headers.get("Content-Type", "").split(";")[0].lower() not in ("application/zip", "application/octet-stream"):
                     return self.json_response(415, {"error": "Envie ZIP com application/zip"})
                 flight = safe_id(self.headers.get("X-Flight-ID", "sequoia_real"), "flight_id")
-                result = import_sequoia_zip(self.rfile.read(size), flight)
+                profile = self.headers.get("X-Sensor-Profile", "auto").lower()
+                if profile not in ("auto", "sequoia", "sentinel2", "micasense_rededge"):
+                    raise ValueError("Perfil de sensor invalido")
+                result = import_generic_zip(self.rfile.read(size), flight, profile=profile)
                 return self.json_response(201 if result["processed"] else 422, result)
             if size <= 0 or size > MAX_UPLOAD:
                 return self.json_response(413, {"error": "Requisicao vazia ou acima de 60 MiB"})
