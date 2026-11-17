@@ -114,3 +114,47 @@ python simular_drone.py --quantidade 100 --flight-id voo_03 --seed 3 --intervalo
 ```
 
 Cada execução utiliza novos IDs de captura; os resultados se acumulam em `armazenamento/analisadas/voo_01/`, `voo_02/` e `voo_03/`. A semente torna a geração reprodutível para um mesmo número de captura e permite variar os conjuntos sintéticos. Os dados sintéticos não substituem pares de imagens reais RED/NIR.
+
+
+## Importar imagens reais da Parrot Sequoia pelo HTML (novo)
+
+1. Inicie o servidor normalmente:
+
+```bash
+cd ~/AgroDT/ndvi
+source .venv/bin/activate
+export AGRODT_API_KEY='agrodt-teste-123'
+python app.py
+```
+
+2. Abra http://127.0.0.1:8765.
+3. Em **Adicionar imagens reais**, preencha a mesma chave API do servidor.
+4. Escolha o ZIP `imagens_sequoia.zip` e clique em **Importar e analisar ZIP**.
+
+O ZIP de exemplo possui seis pares `*_RED.TIF` e `*_NIR.TIF`, além de GRE/REG/RGB. O importador usa RED e NIR sem exigir renomear os arquivos. Os arquivos ZIP originais não são modificados. **Não envie** GRE, REG ou RGB no lugar de NIR. A API existente de capturas individuais também permanece.
+
+Há uma segunda opção no painel: **Adicionar um par RED/NIR**. Selecione um arquivo TIFF/PNG por banda, informe a mesma chave API e clique para analisar. A API de upload de pares permanece `POST /api/v1/captures`.
+
+O servidor mantém o monitor da pasta `armazenamento/entrada/<voo>/<captura>/red.tif` e `nir.tif`, o envio via `send_capture.py` e o simulador `simular_drone.py`.
+
+Cada nova captura processada cria `ndvi_mapa.png`, `heatmap_ndvi.png`, `red_preview.png`, `nir_preview.png`, `mapa_areas_atencao.png`, `areas_atencao.json` e `resumo.json`, dentro de `armazenamento/analisadas/<voo>/<captura>/`. Os TIFFs são preservados em `originais/`.
+
+### Importar ZIP via linha de comando
+
+```bash
+curl -X POST http://127.0.0.1:8765/api/v1/import-zip \
+  -H "X-API-Key: $AGRODT_API_KEY" \
+  -H "X-Flight-ID: sequoia_teste_01" \
+  -H "Content-Type: application/zip" \
+  --data-binary @"/caminho/para/imagens_sequoia.zip"
+```
+
+### Limitações científicas
+
+Os TIFFs Sequoia são bandas brutas de sensor, sem calibração radiométrica nem registro espacial aplicado pelo pipeline atual. O mapa de calor criado é uma visualização do **NDVI bruto**, útil para conferir a integração, mas **não** é um diagnóstico confiável de estresse vegetal. A correspondência de dimensões entre RED e NIR não garante alinhamento geométrico. Para aplicações agronômicas, é preciso calibrar as bandas para reflectância, ajustar o alinhamento e tratar NoData/valores inválidos.
+
+### Testes
+
+```bash
+python -m unittest discover -s tests -v
+```
