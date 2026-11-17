@@ -1,0 +1,3 @@
+# Dependencias opcionais para GeoTIFF/JP2 multibanda e metadados geoespaciais
+-r requirements.txt
+rasterio>=1.3,<2
