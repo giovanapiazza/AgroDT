@@ -24,7 +24,7 @@ except ImportError as exc:
     raise SystemExit("Instale requests: pip install -r requirements-webodm.txt") from exc
 
 HERE = Path(__file__).resolve().parent
-DEFAULT_OUTPUT = HERE / "armazenamento" / "ortomosaicos"
+DEFAULT_OUTPUT = Path(os.environ.get("AGRODT_NDVI_DATA", HERE / "armazenamento")).resolve() / "ortomosaicos"
 ALLOWED_SUFFIXES = {".jpg", ".jpeg", ".tif", ".tiff", ".png"}
 STATUSES = {10: "na fila", 20: "processando", 30: "falhou", 40: "concluida", 50: "cancelada"}
 SAFE_NAME = re.compile(r"^[A-Za-z0-9_-]{1,64}$")
@@ -167,6 +167,15 @@ def run(args):
             filename = args.saida / name / "orthophoto.tif"
             download_orthophoto(token, base, args.projeto_id, args.tarefa_id, filename)
             print("Ortomosaico salvo em:", filename)
+            try:
+                from orthomosaic_catalog import build_preview
+                detail = build_preview(filename)
+                print("Preview PNG gerada:", filename.with_name("preview.png"))
+                print("Bandas:", detail["bands"], "| CRS:", detail["crs"])
+            except (ImportError, ValueError, RuntimeError, OSError) as exc:
+                print("Aviso: GeoTIFF salvo, mas nao foi possivel criar a previa:", exc)
+                print("Instale rasterio com: pip install -r requirements-geo.txt")
+            print("Recarregue o painel AgroDT para ver o ortomosaico.")
             print("Para calcular NDVI, confirme a ordem das bandas antes de importar o GeoTIFF no AgroDT.")
 
 
