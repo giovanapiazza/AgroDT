@@ -23,6 +23,7 @@ from urllib.parse import unquote, urlsplit
 import numpy as np
 from PIL import Image, ImageDraw
 from image_importer import find_pairs, read_zip, extract_single_band, make_tiff
+from orthomosaic_catalog import list_mosaics
 
 HERE = Path(__file__).resolve().parent
 ROOT = Path(os.environ.get("AGRODT_NDVI_DATA", HERE / "armazenamento")).resolve()
@@ -417,6 +418,23 @@ class Handler(BaseHTTPRequestHandler):
             return self.serve_path(HERE / "templates" / "index.html", "text/html; charset=utf-8")
         if path == "/health":
             return self.json_response(200, {"status": "ok", "service": "agrodt-ndvi"})
+        if path == "/api/v1/orthomosaics":
+            return self.json_response(200, {"orthomosaics": list_mosaics(ROOT)})
+        if path.startswith("/api/v1/orthomosaics/"):
+            flight_id = path.removeprefix("/api/v1/orthomosaics/")
+            mosaics = {item["flight_id"]: item for item in list_mosaics(ROOT)}
+            if SAFE.fullmatch(flight_id) and flight_id in mosaics:
+                return self.json_response(200, mosaics[flight_id])
+            return self.json_response(404, {"error": "Ortomosaico nao encontrado"})
+        if path.startswith("/orthomosaics/"):
+            parts = path.strip("/").split("/")
+            if len(parts) == 3:
+                _, flight_id, filename = parts
+                if SAFE.fullmatch(flight_id) and filename in ("preview.png", "ortomosaico_info.json"):
+                    target = ROOT / "ortomosaicos" / flight_id / filename
+                    if target.is_file():
+                        mime = "image/png" if filename.endswith(".png") else "application/json; charset=utf-8"
+                        return self.serve_path(target, mime)
         if path == "/api/v1/captures":
             return self.json_response(200, {"captures": list_captures()})
         if path.startswith("/api/v1/captures/"):
