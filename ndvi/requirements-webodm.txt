@@ -1,0 +1,3 @@
+# Dependencias para integrar WebODM e gerar preview de GeoTIFF
+-r requirements-geo.txt
+requests>=2.31,<3
