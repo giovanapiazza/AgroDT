@@ -24,6 +24,10 @@ import numpy as np
 from PIL import Image, ImageDraw
 from image_importer import find_pairs, read_zip, extract_single_band, make_tiff
 from orthomosaic_catalog import list_mosaics
+from orthomosaic_dashboard import (list_sources as list_orthomosaic_sources,
+    import_zip as import_flight_zip, start_job as start_orthomosaic_job,
+    resume_jobs as resume_orthomosaic_jobs, read_state as read_orthomosaic_state,
+    MAX_ZIP as MAX_FLIGHT_ZIP)
 
 HERE = Path(__file__).resolve().parent
 ROOT = Path(os.environ.get("AGRODT_NDVI_DATA", HERE / "armazenamento")).resolve()
@@ -418,12 +422,26 @@ class Handler(BaseHTTPRequestHandler):
             return self.serve_path(HERE / "templates" / "index.html", "text/html; charset=utf-8")
         if path == "/health":
             return self.json_response(200, {"status": "ok", "service": "agrodt-ndvi"})
+        if path == "/api/v1/orthomosaics/sources":
+            return self.json_response(200, {"sources": list_orthomosaic_sources(ROOT, HERE)})
         if path == "/api/v1/orthomosaics":
-            return self.json_response(200, {"orthomosaics": list_mosaics(ROOT)})
+            mosaics = list_mosaics(ROOT)
+            for mosaic in mosaics:
+                state = read_orthomosaic_state(ROOT, mosaic["flight_id"])
+                if state:
+                    mosaic.update({k: state[k] for k in ("status", "message",
+                        "progress", "project_id", "task_id", "updated_at", "source")
+                        if k in state})
+            return self.json_response(200, {"orthomosaics": mosaics})
         if path.startswith("/api/v1/orthomosaics/"):
             flight_id = path.removeprefix("/api/v1/orthomosaics/")
             mosaics = {item["flight_id"]: item for item in list_mosaics(ROOT)}
             if SAFE.fullmatch(flight_id) and flight_id in mosaics:
+                state = read_orthomosaic_state(ROOT, flight_id)
+                if state:
+                    mosaics[flight_id].update({k: state[k] for k in ("status", "message",
+                        "progress", "project_id", "task_id", "updated_at", "source")
+                        if k in state})
                 return self.json_response(200, mosaics[flight_id])
             return self.json_response(404, {"error": "Ortomosaico nao encontrado"})
         if path.startswith("/orthomosaics/"):
@@ -464,12 +482,55 @@ class Handler(BaseHTTPRequestHandler):
 
     def do_POST(self):
         route = urlsplit(self.path).path
-        if route not in ("/api/v1/captures", "/api/v1/import-zip", "/api/v1/import-multiband"):
+        if route not in ("/api/v1/captures", "/api/v1/import-zip",
+                         "/api/v1/import-multiband", "/api/v1/orthomosaics/start",
+                         "/api/v1/orthomosaics/upload"):
             return self.json_response(404, {"error": "Rota nao encontrada"})
         if not API_KEY or not hmac.compare_digest(self.headers.get("X-API-Key", ""), API_KEY):
             return self.json_response(401, {"error": "Chave API ausente ou invalida"})
         try:
             size = int(self.headers.get("Content-Length", "0"))
+            if route == "/api/v1/orthomosaics/start":
+                if size <= 0 or size > 4096:
+                    return self.json_response(413, {"error": "JSON invalido ou grande demais"})
+                if self.headers.get("Content-Type", "").split(";")[0].lower() != "application/json":
+                    return self.json_response(415, {"error": "Envie application/json"})
+                try:
+                    command = json.loads(self.rfile.read(size))
+                except (ValueError, UnicodeDecodeError):
+                    raise ValueError("JSON invalido")
+                if not isinstance(command, dict):
+                    raise ValueError("Envie um objeto JSON")
+                flight = safe_id(command.get("flight_id", ""), "flight_id")
+                source = command.get("source", "data")
+                if source not in ("data", "upload"):
+                    raise ValueError("Origem invalida")
+                state = start_orthomosaic_job(ROOT, HERE, flight, source=source)
+                return self.json_response(202, {"job": state})
+            if route == "/api/v1/orthomosaics/upload":
+                if size <= 0 or size > MAX_FLIGHT_ZIP:
+                    return self.json_response(413, {"error": "ZIP vazio ou acima de 600 MiB"})
+                if self.headers.get("Content-Type", "").split(";")[0].lower() not in (
+                    "application/zip", "application/octet-stream"):
+                    return self.json_response(415, {"error": "Envie um ZIP original (application/zip)"})
+                flight = safe_id(self.headers.get("X-Flight-ID", ""), "flight_id")
+                # Gravacao incremental para nao alocar o ZIP inteiro em memoria.
+                tmpdir = ROOT / "temporarios"
+                tmpdir.mkdir(parents=True, exist_ok=True)
+                tmppath = tmpdir / (uuid.uuid4().hex + ".zip")
+                try:
+                    remaining = size
+                    with tmppath.open("wb") as destination:
+                        while remaining:
+                            chunk = self.rfile.read(min(1024 * 1024, remaining))
+                            if not chunk:
+                                raise ValueError("Upload ZIP incompleto")
+                            destination.write(chunk)
+                            remaining -= len(chunk)
+                    imported = import_flight_zip(tmppath, ROOT, flight)
+                finally:
+                    tmppath.unlink(missing_ok=True)
+                return self.json_response(201, {"flight": imported})
             if route == "/api/v1/import-multiband":
                 if size <= 0 or size > MAX_UPLOAD:
                     return self.json_response(413, {"error": "Arquivo vazio ou acima de 60 MiB"})
@@ -523,6 +584,7 @@ def main():
     if not API_KEY:
         parser.error("Defina AGRODT_API_KEY antes de iniciar o receptor")
     init_db()
+    resume_orthomosaic_jobs(ROOT)
     threading.Thread(target=watch_folder, daemon=True).start()
     server = ThreadingHTTPServer((args.host, args.port), Handler)
     print(f"AgroDT NDVI: http://{args.host}:{args.port}  |  armazenamento: {ROOT}", flush=True)
