@@ -1,6 +1,6 @@
 <!doctype html><html lang="pt-BR"><head><meta charset="utf-8"><meta name="viewport" content="width=device-width,initial-scale=1"><title>AgroDT NDVI</title><style>
 :root{color-scheme:dark;font-family:system-ui;background:#0b1720;color:#e9f5ef}body{margin:0}header{padding:22px 5%;background:#142831;border-bottom:1px solid #36505a;display:flex;justify-content:space-between}.logo{font-size:24px;font-weight:700}.logo b{color:#6bdfa6}main{max-width:1200px;margin:auto;padding:26px 18px}p,small{color:#b9cdd1}.cards{display:grid;grid-template-columns:repeat(4,1fr);gap:12px}.card,.pane{background:#162b35;border:1px solid #34505b;border-radius:13px;padding:17px}.card strong{display:block;font-size:27px;margin-top:8px}.layout{display:grid;grid-template-columns:310px 1fr;gap:16px;margin-top:18px}select,button,input[type=file]{background:#213d48;color:white;border:1px solid #42616a;padding:10px;border-radius:9px;cursor:pointer}button{width:100%;text-align:left;margin:5px 0}.selected{border-color:#78e5a8;background:#285044}.imgs{display:grid;grid-template-columns:1fr 1fr;gap:12px}.imgs img{width:100%;height:220px;object-fit:contain;background:#071117;border-radius:8px}.imgs div{background:#10252e;padding:8px;border-radius:9px}.muted{color:#a8bfc5}table{width:100%;border-collapse:collapse}td,th{text-align:left;padding:9px;border-bottom:1px solid #35515c}.scroll{max-height:650px;overflow:auto}@media(max-width:850px){.layout{grid-template-columns:1fr}.cards{grid-template-columns:1fr 1fr}.imgs{grid-template-columns:1fr}}.upload{margin-top:18px;display:grid;grid-template-columns:1fr auto;gap:10px;align-items:center}.upload button{width:auto;padding:12px 18px}.upload small{grid-column:1/-1}#upload-message{grid-column:1/-1;white-space:pre-wrap}.heatmap-note{font-size:13px;color:#a8bfc5}.imgs img{image-rendering:auto}@media(max-width:600px){.upload{grid-template-columns:1fr}.upload button{width:100%}}
-.import-panel{margin-bottom:14px}.import-toggle{display:flex;align-items:center;justify-content:space-between;width:100%;font-size:18px;font-weight:700;background:transparent;border:0;margin:0;padding:3px 0;text-align:left}.import-toggle:hover{color:#8be4b2}.import-options{display:flex;gap:10px;flex-wrap:wrap;margin:14px 0}.import-option{width:auto;flex:1;min-width:190px;text-align:center}.import-content{display:grid;grid-template-columns:1fr 1fr;align-items:center;gap:10px;margin-top:12px}.import-content p,.import-content small,.import-content [role=status]{grid-column:1/-1}.import-content button{grid-column:1/-1;width:100%;text-align:center}.import-content input[type=file]{min-width:0;width:100%;box-sizing:border-box}.upload-key-line{display:grid;grid-template-columns:1fr 1fr;align-items:center;gap:10px;margin-top:14px}.upload-key-line input{background:#213d48;color:white;border:1px solid #42616a;padding:10px;border-radius:9px;min-width:0}.import-content input[type=number],.import-content select{background:#213d48;color:white;border:1px solid #42616a;padding:10px;border-radius:9px;min-width:0;width:100%;box-sizing:border-box}.import-panel [hidden]{display:none!important}#upload-message,#pair-message,#multi-message{white-space:pre-wrap}@media(max-width:600px){.import-content,.upload-key-line{grid-template-columns:1fr}.import-option{min-width:100%}}.mosaics-section{margin-top:18px}.mosaics-grid{display:grid;grid-template-columns:minmax(200px,320px) 1fr;gap:15px}.mosaics-section select{width:100%}.mosaics-view{min-height:230px;display:flex;flex-direction:column;align-items:center;justify-content:center;background:#0d2029;border-radius:12px;padding:12px;gap:12px}.mosaics-view img{display:block;width:100%;height:auto;max-height:550px;object-fit:contain;border-radius:8px}.mosaics-view p{margin:0}.mosaics-description{font-size:13px;color:#a8bfc5}@media(max-width:800px){.mosaics-grid{grid-template-columns:1fr}}</style></head><body>
+.import-panel{margin-bottom:14px}.import-toggle{display:flex;align-items:center;justify-content:space-between;width:100%;font-size:18px;font-weight:700;background:transparent;border:0;margin:0;padding:3px 0;text-align:left}.import-toggle:hover{color:#8be4b2}.import-options{display:flex;gap:10px;flex-wrap:wrap;margin:14px 0}.import-option{width:auto;flex:1;min-width:190px;text-align:center}.import-content{display:grid;grid-template-columns:1fr 1fr;align-items:center;gap:10px;margin-top:12px}.import-content p,.import-content small,.import-content [role=status]{grid-column:1/-1}.import-content button{grid-column:1/-1;width:100%;text-align:center}.import-content input[type=file]{min-width:0;width:100%;box-sizing:border-box}.upload-key-line{display:grid;grid-template-columns:1fr 1fr;align-items:center;gap:10px;margin-top:14px}.upload-key-line input{background:#213d48;color:white;border:1px solid #42616a;padding:10px;border-radius:9px;min-width:0}.import-content input[type=number],.import-content select{background:#213d48;color:white;border:1px solid #42616a;padding:10px;border-radius:9px;min-width:0;width:100%;box-sizing:border-box}.import-panel [hidden]{display:none!important}#upload-message,#pair-message,#multi-message{white-space:pre-wrap}@media(max-width:600px){.import-content,.upload-key-line{grid-template-columns:1fr}.import-option{min-width:100%}}.mosaics-section{margin-top:18px}.mosaics-grid{display:grid;grid-template-columns:minmax(200px,320px) 1fr;gap:15px}.mosaics-section select{width:100%}.mosaics-view{min-height:230px;display:flex;flex-direction:column;align-items:center;justify-content:center;background:#0d2029;border-radius:12px;padding:12px;gap:12px}.mosaics-view img{display:block;width:100%;height:auto;max-height:550px;object-fit:contain;border-radius:8px}.mosaics-view p{margin:0}.mosaics-description{font-size:13px;color:#a8bfc5}@media(max-width:800px){.mosaics-grid{grid-template-columns:1fr}}.mosaics-controls{display:grid;grid-template-columns:1fr;gap:8px;align-content:start}.mosaics-controls input{box-sizing:border-box;width:100%;min-width:0;background:#213d48;color:#fff;border:1px solid #42616a;border-radius:9px;padding:10px}.mosaics-controls label{font-size:13px;color:#bed4d7}.mosaics-controls button{width:100%;text-align:center}.mosaics-controls button:disabled{opacity:.55;cursor:wait}.mosaics-divider{padding:9px 0;border-top:1px solid #35515c;text-align:center;color:#bed4d7;font-size:13px}.mosaics-progress{display:flex;align-items:center;gap:8px;margin:8px 0}.mosaics-progress progress{width:100%;accent-color:#6bdfa6}#mosaic-action-message{white-space:pre-wrap;font-size:13px;color:#e4f2f0}.mosaics-progress[hidden]{display:none!important}</style></head><body>
 <header><div class="logo">Agro<b>DT</b> / NDVI</div><span id="status">Conectando…</span></header><main><h1>Monitoramento de vegetação</h1><p>Fluxo simulado: drone → Raspberry Pi (servidor NDVI) → pasta analisadas/ → painel HTML. Atualização a cada 5 segundos.</p>
 <section class="pane import-panel">
   <button type="button" id="toggle-import" class="import-toggle" aria-expanded="false" aria-controls="import-body">
@@ -61,15 +61,34 @@
 <div class="layout"><section class="pane"><h2>Capturas</h2><div class="scroll" id="list">Aguardando…</div></section><section class="pane"><h2 id="title">Selecione uma captura</h2><div id="detail" class="muted">Envie imagens para começar.</div></section></div>
 <section class="pane mosaics-section" aria-labelledby="mosaics-heading">
   <h2 id="mosaics-heading">Ortomosaicos dos voos (WebODM)</h2>
-  <p>Visualize o ortomosaico gerado pelo WebODM depois de baixar e converter a prévia. O mapa NDVI das capturas permanece separado.</p>
+  <p>Escolha um voo de fotos originais ou envie um ZIP. O AgroDT cria a tarefa no WebODM, acompanha o processamento, baixa o ortomosaico pronto e exibe a prévia aqui.</p>
   <div class="mosaics-grid">
-    <div>
-      <label for="mosaic-flight">Selecionar voo</label>
-      <select id="mosaic-flight"><option value="">Nenhum ortomosaico disponível</option></select>
-      <button id="refresh-mosaics" type="button">Atualizar ortomosaicos</button>
-      <p class="mosaics-description" id="mosaic-metadata">Os resultados serão listados quando o WebODM gerar um ortomosaico.</p>
+    <div class="mosaics-controls">
+      <label for="mosaic-api-key">Chave API do AgroDT</label>
+      <input id="mosaic-api-key" type="password" autocomplete="off" placeholder="Mesma AGRODT_API_KEY do servidor">
+      <label for="mosaic-source">Voo existente (fotos originais)</label>
+      <select id="mosaic-source"><option value="">Carregando voos...</option></select>
+      <button id="mosaic-start" type="button">Gerar ortomosaico do voo</button>
+      <div class="mosaics-divider">ou enviar fotos originais em ZIP</div>
+      <label for="mosaic-zip-name">Identificador do novo voo</label>
+      <input id="mosaic-zip-name" type="text" maxlength="64" placeholder="ex.: voo_milho_01" pattern="[A-Za-z0-9_-]+">
+      <label for="mosaic-zip">ZIP com fotografias originais</label>
+      <input id="mosaic-zip" type="file" accept=".zip,application/zip">
+      <button id="mosaic-upload-start" type="button">Enviar ZIP e gerar ortomosaico</button>
+      <p class="mosaics-description">Fotos JPG/TIFF/PNG da mesma área e voo, com sobreposição e metadados. O WebODM precisa estar ativo no servidor. Limite do ZIP: 600 MiB.</p>
+      <div id="mosaic-action-message" role="status" aria-live="polite"></div>
     </div>
-    <div class="mosaics-view" id="mosaic-view"><p>Sem ortomosaicos no momento.</p></div>
+    <div>
+      <label for="mosaic-flight">Ortomosaicos e tarefas</label>
+      <select id="mosaic-flight"><option value="">Nenhum ortomosaico disponível</option></select>
+      <button id="refresh-mosaics" type="button">Atualizar status</button>
+      <p class="mosaics-description" id="mosaic-metadata">Os resultados serão listados quando o WebODM gerar um ortomosaico.</p>
+      <div class="mosaics-progress" id="mosaic-progress-container" hidden>
+        <progress id="mosaic-progress" max="100" value="0"></progress>
+        <span id="mosaic-progress-label">0%</span>
+      </div>
+      <div class="mosaics-view" id="mosaic-view"><p>Sem ortomosaicos no momento.</p></div>
+    </div>
   </div>
 </section>
 <p>NDVI baixo sugere possível estresse vegetal, mas não comprova deficiência nutricional. As regiões são expressas em pixels, ainda não em coordenadas para o Husky.</p></main>
@@ -90,27 +109,74 @@ $('upload-pair').onclick=async()=>{const red=$('red-file').files[0],nir=$('nir-f
 $('upload-multi').onclick=async()=>{const file=$('multiband-file').files[0],msg=$('multi-message'),btn=$('upload-multi');if(!file){msg.textContent='Selecione um GeoTIFF ou JP2.';return}if(!$('upload-key').value){msg.textContent='Informe a chave API do servidor.';return}const red=Number($('red-band-index').value),nir=Number($('nir-band-index').value);if(!Number.isInteger(red)||!Number.isInteger(nir)||red<1||nir<1||red===nir){msg.textContent='Informe indices validos e diferentes para RED e NIR.';return}if(file.size>60*1024*1024){msg.textContent='Arquivo acima de 60 MiB.';return}btn.disabled=true;msg.textContent='Extraindo bandas e calculando NDVI...';try{const extension=file.name.slice(file.name.lastIndexOf('.')).toLowerCase();const r=await fetch('/api/v1/import-multiband',{method:'POST',headers:{'Content-Type':'application/octet-stream','X-API-Key':$('upload-key').value,'X-Flight-ID':'multibanda_'+Date.now(),'X-File-Extension':extension,'X-Red-Band':String(red),'X-Nir-Band':String(nir)},body:file});const data=await r.json();if(!r.ok)throw Error(data.error||('HTTP '+r.status));msg.textContent='Captura analisada: '+data.capture_id+' | NDVI '+num(data.mean_ndvi);await update()}catch(e){msg.textContent='Falha: '+e.message}finally{btn.disabled=false}};
 $('flight').onchange=()=>{selected=null;showList()};$('refresh').onclick=update;update();setInterval(update,5000);
 
-let mosaicList=[],selectedMosaic='';
+let mosaicList=[],mosaicSources=[],selectedMosaic='',mosaicBusy=false;
+function mosaicStatusLabel(item){
+ const labels={queued:'na fila',submitting:'enviando fotos',processing:'processando',downloading:'baixando mapa',generating_preview:'gerando prévia',completed:'concluído',failed:'erro'};
+ return labels[item.status]||(item.has_preview?'pronto':item.has_orthophoto?'sem prévia':'tarefa registrada');
+}
 function showMosaic(){
- const chosen=mosaicList.find(m=>m.flight_id===selectedMosaic),view=$('mosaic-view'),meta=$('mosaic-metadata');
+ const chosen=mosaicList.find(m=>m.flight_id===selectedMosaic),view=$('mosaic-view'),meta=$('mosaic-metadata'),progress=$('mosaic-progress-container');
  view.replaceChildren();
+ progress.hidden=!chosen||!['queued','submitting','processing','downloading','generating_preview'].includes(chosen.status);
  if(!chosen){meta.textContent='Ainda não há um voo com ortomosaico disponível.';view.append(el('p','Sem ortomosaicos no momento.'));return}
- meta.textContent='Voo: '+chosen.flight_id+' | '+(chosen.width?chosen.width+' × '+chosen.height+' px | ':'')+(chosen.bands?'Bandas: '+chosen.bands+' | ':'')+'CRS: '+(chosen.crs||'não informado');
- if(chosen.has_preview){const img=el('img');img.alt='Prévia do ortomosaico do voo '+chosen.flight_id;img.src='/orthomosaics/'+encodeURIComponent(chosen.flight_id)+'/preview.png';img.onerror=()=>{view.replaceChildren(el('p','A prévia não pôde ser carregada. Gere novamente com o comando de download do WebODM.'))};view.append(img)}
- else view.append(el('p',chosen.has_orthophoto?'Ortomosaico GeoTIFF disponível, mas a prévia PNG ainda não foi gerada.':'Tarefa WebODM cadastrada. Aguarde o processamento e baixe o resultado.'));
+ const status=mosaicStatusLabel(chosen);
+ meta.textContent='Voo: '+chosen.flight_id+' | Estado: '+status+' | '+(chosen.width?chosen.width+' × '+chosen.height+' px | ':'')+(chosen.bands?'Bandas: '+chosen.bands+' | ':'')+'CRS: '+(chosen.crs||'não informado');
+ if(!progress.hidden){const pc=Number.isFinite(Number(chosen.progress))?Math.max(0,Math.min(100,Number(chosen.progress))):0;$('mosaic-progress').value=pc;$('mosaic-progress-label').textContent=pc+'%'}
+ if(chosen.has_preview){const img=el('img');img.alt='Prévia do ortomosaico do voo '+chosen.flight_id;img.src='/orthomosaics/'+encodeURIComponent(chosen.flight_id)+'/preview.png';img.onerror=()=>{view.replaceChildren(el('p','A prévia não pôde ser carregada. Consulte os logs do WebODM.'))};view.append(img)}
+ else view.append(el('p',chosen.message||(chosen.has_orthophoto?'GeoTIFF pronto, mas a prévia ainda não foi gerada.':'Nenhum mapa gerado para este voo.')));
  if(chosen.preview_note)view.append(el('p',chosen.preview_note));
 }
 async function updateMosaics(){
- try{const resp=await fetch('/api/v1/orthomosaics',{cache:'no-store'});if(!resp.ok)throw Error('HTTP '+resp.status);
- mosaicList=(await resp.json()).orthomosaics||[];
- const old=selectedMosaic;const select=$('mosaic-flight');
- select.replaceChildren();
+ try{const [jobsResponse,sourcesResponse]=await Promise.all([fetch('/api/v1/orthomosaics',{cache:'no-store'}),fetch('/api/v1/orthomosaics/sources',{cache:'no-store'})]);
+ if(!jobsResponse.ok||!sourcesResponse.ok)throw Error('Servidor HTTP '+jobsResponse.status+'/'+sourcesResponse.status);
+ mosaicList=(await jobsResponse.json()).orthomosaics||[];
+ mosaicSources=(await sourcesResponse.json()).sources||[];
+ const source=$('mosaic-source'),oldSource=source.value;
+ source.replaceChildren();
+ if(!mosaicSources.length)source.append(new Option('Nenhum voo com fotos originais',''));
+ else for(const item of mosaicSources)source.append(new Option(item.flight_id+' ('+item.images_count+' imagens, '+(item.source==='data'?'pasta data':'ZIP enviado')+')',item.source+':'+item.flight_id));
+ if(mosaicSources.some(item=>item.source+':'+item.flight_id===oldSource))source.value=oldSource;
+ const old=selectedMosaic,select=$('mosaic-flight');select.replaceChildren();
  if(!mosaicList.length){select.append(new Option('Nenhum ortomosaico disponível',''));selectedMosaic=''}
- else{for(const item of mosaicList)select.append(new Option(item.flight_id+(item.has_preview?' — pronto':item.has_orthophoto?' — sem prévia':' — tarefa registrada'),item.flight_id));
+ else{for(const item of mosaicList)select.append(new Option(item.flight_id+' — '+mosaicStatusLabel(item),item.flight_id));
  selectedMosaic=mosaicList.some(item=>item.flight_id===old)?old:mosaicList[0].flight_id;select.value=selectedMosaic}
  showMosaic();
- }catch(e){$('mosaic-metadata').textContent='Não foi possível consultar os ortomosaicos: '+e.message}
+ }catch(e){$('mosaic-metadata').textContent='Não foi possível consultar ortomosaicos: '+e.message}
 }
+function mosaicApiKey(){const value=$('mosaic-api-key').value.trim();if(!value)throw Error('Informe a chave API do AgroDT.');return value}
+function mosaicSetBusy(busy){mosaicBusy=busy;$('mosaic-start').disabled=busy;$('mosaic-upload-start').disabled=busy}
+async function mosaicPost(url,headers,body){
+ const response=await fetch(url,{method:'POST',headers:{'X-API-Key':mosaicApiKey(),...headers},body});
+ const data=await response.json();
+ if(!response.ok)throw Error(data.error||'HTTP '+response.status);
+ return data;
+}
+async function mosaicStart(flight,source){
+ const result=await mosaicPost('/api/v1/orthomosaics/start',{'Content-Type':'application/json'},JSON.stringify({flight_id:flight,source}));
+ selectedMosaic=flight;
+ return result;
+}
+$('mosaic-start').onclick=async()=>{
+ const message=$('mosaic-action-message'),selected=$('mosaic-source').value;
+ if(!selected){message.textContent='Selecione um voo que contenha fotos originais.';return}
+ const colon=selected.indexOf(':'),source=selected.slice(0,colon),flight=selected.slice(colon+1);
+ if(!['data','upload'].includes(source)){message.textContent='Origem do voo inválida.';return}
+ mosaicSetBusy(true);message.textContent='Enviando tarefa ao WebODM...';
+ try{await mosaicStart(flight,source);message.textContent='Voo '+flight+' enviado. Acompanhe o processamento no painel.';await updateMosaics()}
+ catch(e){message.textContent='Falha: '+e.message}finally{mosaicSetBusy(false)}
+};
+$('mosaic-upload-start').onclick=async()=>{
+ const message=$('mosaic-action-message'),flight=$('mosaic-zip-name').value.trim(),file=$('mosaic-zip').files[0];
+ if(!/^[A-Za-z0-9_-]{1,64}$/.test(flight)){message.textContent='Informe um identificador de voo válido (letras, números, _ ou -).';return}
+ if(!file){message.textContent='Selecione o ZIP de fotos originais.';return}
+ if(file.size>600*1024*1024){message.textContent='ZIP excede o limite de 600 MiB.';return}
+ mosaicSetBusy(true);message.textContent='Recebendo ZIP original...';
+ try{const imported=await mosaicPost('/api/v1/orthomosaics/upload',{'Content-Type':'application/zip','X-Flight-ID':flight},file);
+ message.textContent='Importadas '+imported.flight.images_count+' imagens. Iniciando WebODM...';
+ await mosaicStart(flight,'upload');message.textContent='Voo '+flight+' enviado ao WebODM. O resultado será exibido após o processamento.';
+ await updateMosaics();
+ }catch(e){message.textContent='Falha: '+e.message}finally{mosaicSetBusy(false)}
+};
 $('mosaic-flight').onchange=()=>{selectedMosaic=$('mosaic-flight').value;showMosaic()};
 $('refresh-mosaics').onclick=updateMosaics;
 updateMosaics();
