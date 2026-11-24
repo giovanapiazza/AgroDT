@@ -1,0 +1,262 @@
+"""Orquestra WebODM a partir do painel AgroDT, preservando TIFFs originais."""
+from __future__ import annotations
+from datetime import datetime, timezone
+import json
+import os
+from pathlib import Path
+import re
+import shutil
+import threading
+import time
+import uuid
+import zipfile
+
+SAFE = re.compile(r"^[A-Za-z0-9_-]{1,64}$")
+EXT = {".jpg", ".jpeg", ".tif", ".tiff", ".png"}
+MAX_IMAGES = 600
+MAX_MEMBER = 80 * 1024 * 1024
+MAX_UNCOMPRESSED = 1400 * 1024 * 1024
+MAX_ZIP = 600 * 1024 * 1024
+ACTIVE = {"queued", "submitting", "processing", "downloading", "generating_preview"}
+_lock = threading.RLock()
+_workers: dict[str, threading.Thread] = {}
+
+
+def timestamp():
+    return datetime.now(timezone.utc).isoformat(timespec="seconds")
+
+
+def validated_flight(flight_id):
+    if not isinstance(flight_id, str) or not SAFE.fullmatch(flight_id):
+        raise ValueError("Voo invalido: use apenas letras, numeros, '-' e '_' (1-64 caracteres)")
+    return flight_id
+
+
+def output_dir(root, flight_id):
+    return Path(root) / "ortomosaicos" / validated_flight(flight_id)
+
+
+def state_file(root, flight_id):
+    return output_dir(root, flight_id) / "processamento.json"
+
+
+def read_state(root, flight_id):
+    path = state_file(root, flight_id)
+    if not path.is_file():
+        return None
+    try:
+        record = json.loads(path.read_text(encoding="utf-8"))
+        return record if isinstance(record, dict) else None
+    except (OSError, ValueError):
+        return None
+
+
+def save_state(root, flight_id, **data):
+    """Grava atualizacoes atomicamente, evitando JSON parcial no polling."""
+    directory = output_dir(root, flight_id)
+    directory.mkdir(parents=True, exist_ok=True)
+    with _lock:
+        state = read_state(root, flight_id) or {"flight_id": flight_id, "created_at": timestamp()}
+        state.update(data, updated_at=timestamp())
+        destination = state_file(root, flight_id)
+        temp = destination.with_name("processamento." + uuid.uuid4().hex + ".tmp")
+        try:
+            temp.write_text(json.dumps(state, ensure_ascii=False, indent=2), encoding="utf-8")
+            temp.replace(destination)
+        finally:
+            temp.unlink(missing_ok=True)
+    return state
+
+
+def _images(folder):
+    from webodm_ortomosaico import collect_images
+    return collect_images(folder)
+
+
+def list_sources(root, here):
+    sources = []
+    for label, base in (("data", Path(here) / "data"),
+                        ("upload", Path(root) / "voos_originais")):
+        if not base.is_dir():
+            continue
+        for folder in sorted(base.iterdir()):
+            if not folder.is_dir() or not SAFE.fullmatch(folder.name):
+                continue
+            try:
+                images = _images(folder)
+            except ValueError:
+                continue
+            sources.append({"flight_id": folder.name, "source": label, "images_count": len(images)})
+    return sources
+
+
+def resolve_source(root, here, flight_id, source):
+    validated_flight(flight_id)
+    if source == "data":
+        folder = Path(here) / "data" / flight_id
+    elif source == "upload":
+        folder = Path(root) / "voos_originais" / flight_id
+    else:
+        raise ValueError("Origem invalida")
+    if not folder.is_dir():
+        raise ValueError("Pasta do voo nao encontrada; use a lista de voos disponiveis")
+    return _images(folder)
+
+
+def import_zip(upload_path, root, flight_id):
+    """Importa ZIP de fotos originais sem modificar bytes, nomes ou metadados."""
+    validated_flight(flight_id)
+    base = Path(root) / "voos_originais"
+    base.mkdir(parents=True, exist_ok=True)
+    target = base / flight_id
+    if target.exists():
+        raise ValueError("Este voo ja existe em voos_originais; escolha outro identificador")
+    staging = base / (".import_" + uuid.uuid4().hex)
+    staging.mkdir()
+    try:
+        with zipfile.ZipFile(upload_path) as archive:
+            members = [x for x in archive.infolist()
+                       if not x.is_dir() and Path(x.filename).suffix.lower() in EXT]
+            if len(members) < 2 or len(members) > MAX_IMAGES:
+                raise ValueError("O ZIP deve conter de 2 a 600 fotos originais")
+            if sum(x.file_size for x in members) > MAX_UNCOMPRESSED:
+                raise ValueError("ZIP descompactado excede 1,4 GiB")
+            names = set()
+            for item in members:
+                if item.file_size > MAX_MEMBER:
+                    raise ValueError("Uma imagem excede 80 MiB")
+                parts = item.filename.replace("\\", "/").split("/")
+                if ".." in parts or item.filename.startswith(("/", "\\")):
+                    raise ValueError("Caminho invalido no ZIP")
+                if item.flag_bits & 0x1:
+                    raise ValueError("ZIP criptografado nao suportado")
+                name = Path(parts[-1]).name
+                if not name or name.casefold() in names:
+                    raise ValueError("Fotos com nomes duplicados; revise a estrutura do ZIP")
+                names.add(name.casefold())
+                with archive.open(item) as source, (staging / name).open("wb") as dest:
+                    shutil.copyfileobj(source, dest, 1024 * 1024)
+        images = _images(staging)
+        staging.rename(target)
+        return {"flight_id": flight_id, "images_count": len(images), "source": "upload"}
+    finally:
+        if staging.exists():
+            shutil.rmtree(staging)
+
+
+def _credentials():
+    address = os.getenv("WEBODM_URL", "http://127.0.0.1:8000").rstrip("/")
+    username = os.getenv("WEBODM_USER", "")
+    password = os.getenv("WEBODM_PASSWORD", "")
+    if not username or not password:
+        raise ValueError("Configure WEBODM_USER e WEBODM_PASSWORD no terminal do app.py")
+    if not address.startswith(("http://", "https://")):
+        raise ValueError("WEBODM_URL deve ser http(s)")
+    return address, username, password
+
+
+def _webodm_progress(task):
+    for field in ("running_progress", "resize_progress", "upload_progress"):
+        try:
+            value = float(task.get(field) or 0)
+            if value > 0:
+                return min(99, max(0, int(value * 100 if value <= 1 else value)))
+        except (TypeError, ValueError):
+            pass
+    return 0
+
+
+def _worker(root, flight_id, image_paths=None):
+    from orthomosaic_catalog import build_preview
+    from webodm_ortomosaico import (authenticate, project, create_task,
+                                     task_status, download_orthophoto)
+    try:
+        address, username, password = _credentials()
+        token = authenticate(address, username, password)
+        state = read_state(root, flight_id) or {}
+        pid, tid = state.get("project_id"), state.get("task_id")
+        if not pid or not tid:
+            if not image_paths:
+                raise ValueError("Nao ha fotos locais para reenviar esta tarefa")
+            save_state(root, flight_id, status="submitting",
+                       message="Enviando fotos originais ao WebODM")
+            pid = project(token, address, flight_id)
+            tid = create_task(token, address, pid, image_paths, flight_id)
+            save_state(root, flight_id, project_id=pid, task_id=tid,
+                       status="processing", message="Tarefa criada; acompanhando WebODM")
+        while True:
+            task = task_status(token, address, pid, tid)
+            status = task.get("status")
+            if status == 40:
+                break
+            if status in (30, 50):
+                raise RuntimeError("WebODM encerrou a tarefa: " +
+                                   str(task.get("last_error") or status))
+            save_state(root, flight_id, status="processing", webodm_status=status,
+                       progress=_webodm_progress(task), message="WebODM processando voo")
+            time.sleep(10)
+        save_state(root, flight_id, status="downloading", progress=99,
+                   message="Baixando ortomosaico do WebODM")
+        out = output_dir(root, flight_id) / "orthophoto.tif"
+        download_orthophoto(token, address, pid, tid, out)
+        save_state(root, flight_id, status="generating_preview", progress=99,
+                   message="Criando preview PNG para o painel")
+        try:
+            info = build_preview(out)
+            save_state(root, flight_id, status="completed", progress=100,
+                       message="Ortomosaico pronto no painel", bands=info.get("bands"),
+                       width=info.get("width"), height=info.get("height"),
+                       crs=info.get("crs"))
+        except Exception as exc:
+            save_state(root, flight_id, status="completed", progress=100,
+                       message="GeoTIFF pronto; preview indisponivel: " + str(exc)[:180])
+    except Exception as exc:
+        save_state(root, flight_id, status="failed", message=str(exc)[:300])
+    finally:
+        with _lock:
+            _workers.pop(flight_id, None)
+
+
+def start_job(root, here, flight_id, source="data", retry=False):
+    validated_flight(flight_id)
+    with _lock:
+        active_thread = _workers.get(flight_id)
+        if active_thread and active_thread.is_alive():
+            raise ValueError("Este voo ja esta em processamento")
+        old = read_state(root, flight_id)
+        if old and old.get("status") in ACTIVE:
+            raise ValueError("Este voo ja possui uma tarefa ativa; consulte o estado")
+        if old and old.get("status") == "completed" and not retry:
+            raise ValueError("Ortomosaico ja concluido para este voo")
+        paths = resolve_source(root, here, flight_id, source)
+        save_state(root, flight_id, status="queued", progress=0,
+                   message="Aguardando WebODM", project_id=None, task_id=None,
+                   images_count=len(paths), source=source)
+        worker = threading.Thread(target=_worker, args=(root, flight_id, paths),
+                                  daemon=True, name="webodm-" + flight_id)
+        _workers[flight_id] = worker
+        worker.start()
+    return read_state(root, flight_id)
+
+
+def resume_jobs(root):
+    """Apos reiniciar servidor, continua acompanhamento de tarefas ja criadas."""
+    base = Path(root) / "ortomosaicos"
+    if not base.is_dir():
+        return
+    for folder in base.iterdir():
+        if not folder.is_dir() or not SAFE.fullmatch(folder.name):
+            continue
+        state = read_state(root, folder.name)
+        if not state or state.get("status") not in ACTIVE:
+            continue
+        if not state.get("project_id") or not state.get("task_id"):
+            save_state(root, folder.name, status="failed",
+                       message="Servidor reiniciado durante o envio. Confirme a tarefa no WebODM e reenvie se necessario.")
+            continue
+        with _lock:
+            if folder.name not in _workers:
+                thread = threading.Thread(target=_worker, args=(root, folder.name),
+                                          daemon=True)
+                _workers[folder.name] = thread
+                thread.start()
