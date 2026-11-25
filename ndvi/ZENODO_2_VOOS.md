@@ -13,7 +13,27 @@ Ambas as fontes anunciam as bandas espectrais necessárias. O script verifica se
 
 **Atenção:** 30 *capturas* multiespectrais com quatro bandas significam **120 TIFFs por voo**, não apenas 30 arquivos. Isso permite enviar todas as bandas disponíveis ao WebODM. Se desejar exatamente 30 arquivos TIFF por voo, use `--capturas 7` (28 arquivos) ou ajuste o fluxo para apenas duas bandas (15 pares), mas a fotogrametria pode não ter sobreposição suficiente.
 
-## Gerar os dois pacotes sem baixar os arquivos completos
+## Opção A — exatamente 30 imagens por missão (15 pares RED/NIR)
+
+Este comando gera dois ZIPs com **30 TIFFs cada**: 15 capturas, duas bandas por captura.
+
+```bash
+cd ~/AgroDT/ndvi
+source .venv/bin/activate
+python -m pip install requests remotezip
+
+python preparar_2_voos_zenodo.py \
+  --capturas 15 --bandas RED,NIR \
+  --saida ~/Downloads/pacotes_zenodo_webodm
+```
+
+Os resultados serão `webodm_ADM3_15_capturas_2bandas.zip` e `webodm_UFRGS_15_capturas_2bandas.zip`.
+
+**Atenção:** 15 posições de câmera podem não ser suficientes para reconstruir um ortomosaico com boa sobreposição. Por isso, para testar a fotogrametria do WebODM, prefira a opção B abaixo.
+
+## Opção B — 30 capturas com quatro bandas por missão (120 TIFFs/ZIP)
+
+
 
 No Ubuntu, com rede:
 
@@ -32,8 +52,8 @@ Em caso de sucesso, serão gerados:
 
 ```text
 ~/Downloads/pacotes_zenodo_webodm/
-├── webodm_ADM3_30_capturas.zip
-└── webodm_UFRGS_30_capturas.zip
+├── webodm_ADM3_30_capturas_4bandas.zip
+└── webodm_UFRGS_30_capturas_4bandas.zip
 ```
 
 **O download remoto usa HTTP Range.** Alguns servidores ou redirecionamentos do Zenodo podem recusar essa operação. Nesse caso, o script falha com uma mensagem clara e **não** cria dados artificiais.
