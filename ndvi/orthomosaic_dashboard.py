@@ -17,7 +17,7 @@ MAX_IMAGES = 600
 MAX_MEMBER = 80 * 1024 * 1024
 MAX_UNCOMPRESSED = 1400 * 1024 * 1024
 MAX_ZIP = 600 * 1024 * 1024
-ACTIVE = {"queued", "submitting", "processing", "downloading", "generating_preview"}
+ACTIVE = {"queued", "submitting", "processing", "downloading", "generating_preview", "calculating_ndvi"}
 _lock = threading.RLock()
 _workers: dict[str, threading.Thread] = {}
 
@@ -218,18 +218,54 @@ def _worker(root, flight_id, image_paths=None):
                    message="Criando preview PNG para o painel")
         try:
             info = build_preview(out)
-            save_state(root, flight_id, status="completed", progress=100,
-                       message="Ortomosaico pronto no painel", bands=info.get("bands"),
-                       width=info.get("width"), height=info.get("height"),
-                       crs=info.get("crs"))
+            save_state(root, flight_id, status="calculating_ndvi", progress=99,
+                       message="Ortomosaico pronto. Identificando bandas RED/NIR...",
+                       bands=info.get("bands"), width=info.get("width"),
+                       height=info.get("height"), crs=info.get("crs"))
+            from orthomosaic_ndvi import calculate_orthomosaic_ndvi, BandSelectionRequired
+            try:
+                ndvi_report = calculate_orthomosaic_ndvi(out, out.parent)
+                save_state(root, flight_id, status="completed", progress=100,
+                           ndvi_status="ready", ndvi_report=ndvi_report,
+                           message="Ortomosaico e NDVI prontos no painel")
+            except BandSelectionRequired as exc:
+                save_state(root, flight_id, status="completed", progress=100,
+                           ndvi_status="needs_bands", ndvi_message=str(exc)[:300],
+                           message="Ortomosaico pronto; selecione RED/NIR para calcular NDVI")
+            except Exception as exc:
+                save_state(root, flight_id, status="completed", progress=100,
+                           ndvi_status="failed", ndvi_message=str(exc)[:300],
+                           message="Ortomosaico pronto; falha ao calcular NDVI")
         except Exception as exc:
             save_state(root, flight_id, status="completed", progress=100,
-                       message="GeoTIFF pronto; preview indisponivel: " + str(exc)[:180])
+                       ndvi_status="not_run", message="GeoTIFF pronto; preview indisponivel: " + str(exc)[:180])
     except Exception as exc:
         save_state(root, flight_id, status="failed", message=str(exc)[:300])
     finally:
         with _lock:
             _workers.pop(flight_id, None)
+
+
+def calculate_existing_ndvi(root, flight_id, red_index, nir_index):
+    """Calculo sob demanda para o GeoTIFF existente, sem reenviar fotos ao WebODM."""
+    from orthomosaic_ndvi import calculate_orthomosaic_ndvi
+    validated_flight(flight_id)
+    with _lock:
+        state = read_state(root, flight_id) or {}
+        if state.get("status") in ACTIVE:
+            raise ValueError("A tarefa WebODM ainda esta em andamento")
+        source = output_dir(root, flight_id) / "orthophoto.tif"
+        if not source.is_file():
+            raise ValueError("Ortomosaico nao encontrado; conclua o processamento WebODM primeiro")
+        save_state(root, flight_id, ndvi_status="processing", ndvi_message="Calculando NDVI...")
+        try:
+            result = calculate_orthomosaic_ndvi(source, source.parent, red_index, nir_index)
+            save_state(root, flight_id, ndvi_status="ready", ndvi_report=result,
+                       ndvi_message="NDVI do ortomosaico pronto")
+            return result
+        except Exception as exc:
+            save_state(root, flight_id, ndvi_status="failed", ndvi_message=str(exc)[:300])
+            raise
 
 
 def start_job(root, here, flight_id, source="data", retry=False):
