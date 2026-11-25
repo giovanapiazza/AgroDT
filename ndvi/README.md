@@ -1,90 +1,87 @@
-# NDVI no AgroDT — receptor e interface web
+# AgroDT — NDVI e ortomosaicos WebODM
 
-Este módulo é independente do simulador Husky/Drone/ISOBUS. Recebe pares de bandas **RED e NIR** PNG/TIFF monocromáticas, calcula NDVI, detecta regiões de atenção (heurística), salva em SQLite e mostra os resultados pelo navegador.
+Este é o módulo NDVI **atual** do repositório AgroDT. O servidor `app.py` mantém a recepção automática de pares RED/NIR, imagens reais, simulação do drone, cálculo de NDVI por captura e ortomosaicos multiespectrais processados pelo WebODM.
 
-## Ubuntu 24.04: instalação (primeira vez)
+## Organização
 
-Na raiz do repositório AgroDT:
+| Arquivo/pasta | Responsabilidade |
+|---|---|
+| `app.py` | Servidor HTTP (porta 8765), API, banco SQLite, NDVI por captura, pasta monitorada |
+| `image_importer.py` | Reconhecimento e associação de bandas de sensores diferentes |
+| `simular_drone.py` / `send_capture.py` | Envio automático e manual de capturas por HTTP |
+| `webodm_ortomosaico.py` | Cliente da API WebODM e comandos pelo terminal |
+| `orthomosaic_dashboard.py` | Orquestra tarefas WebODM pelo site e retoma acompanhamento |
+| `orthomosaic_catalog.py` | Lista mosaicos e cria prévias PNG |
+| `orthomosaic_ndvi.py` | NDVI GeoTIFF georreferenciado por blocos, com NoData |
+| `preparar_2_voos_zenodo.py` | Obtém duas missões reais do Zenodo sem sintetizar fotos |
+| `gerar_demo.py` | Gera dados artificiais somente para teste unitário/manual |
+| `limpar_historico.py` | Arquiva o armazenamento anterior, sem apagar arquivos |
+| `templates/index.html` | Painel de capturas, upload e ortomosaicos |
+| `tests/` | Testes unitários e de integração simulada |
+| `requirements*.txt` | Dependências Python; a variante WebODM inclui Rasterio e requests |
+| `armazenamento/` e `data/` | Imagens/dados locais, ignorados pelo Git |
+
+## Instalação Ubuntu 24.04
+
+O WebODM deve estar funcionando separadamente em http://127.0.0.1:8000, com nó de processamento ativo.
 
 ```bash
-cd ndvi
-sudo apt update
-sudo apt install -y python3-venv python3-numpy python3-pil
-python3 -m venv --system-site-packages .venv
+cd ~/AgroDT/ndvi
+python3 -m venv .venv
 source .venv/bin/activate
-export AGRODT_API_KEY='chave-local-teste-2026'
-python3 app.py --host 127.0.0.1 --port 8765
+pip install -r requirements-webodm.txt
+python -m unittest discover -s tests -v
 ```
 
-Abra **http://127.0.0.1:8765**. Deixe o receptor aberto e use outro terminal:
+Em um terminal, configure as credenciais reais do WebODM e a chave local da API **antes de iniciar o servidor**:
 
 ```bash
-cd ndvi
+cd ~/AgroDT/ndvi
 source .venv/bin/activate
-export AGRODT_API_KEY='chave-local-teste-2026'
-python3 gerar_demo.py
-python3 send_capture.py --red data/demo/red.png --nir data/demo/nir.png --capture-id foto_001 --flight-id voo_demo_01
+export WEBODM_URL='http://127.0.0.1:8000'
+read -rp 'Usuário WebODM: ' WEBODM_USER
+read -rsp 'Senha WebODM: ' WEBODM_PASSWORD
+echo
+export WEBODM_USER WEBODM_PASSWORD
+export AGRODT_API_KEY='agrodt-teste-123'
+python app.py
 ```
 
-Para novos testes, altere `--capture-id` (IDs são únicos). O painel é atualizado a cada 5 segundos.
+Acesse http://127.0.0.1:8765 (Ctrl+Shift+R). A senha do WebODM permanece no backend; a interface pede somente a chave local da API AgroDT.
 
-### Imagens reais
+## Como testar
 
-```bash
-python3 send_capture.py --red /caminho/RED.tif --nir /caminho/NIR.tif --flight-id voo_real_01 --capture-id real_001
-```
+- **Recepção do drone:** em outro terminal `export AGRODT_API_KEY='agrodt-teste-123'` e execute `python simular_drone.py --quantidade 20 --intervalo 1 --flight-id teste_01`. Esses dados são sintéticos.
+- **Imagens reais separadas:** abra **Adicionar imagens** no HTML e selecione ZIP multiespectral ou par RED/NIR.
+- **Ortomosaico:** coloque fotos *originais* de um voo em `ndvi/data/voo_01/` ou envie um ZIP na área **Ortomosaicos dos voos (WebODM)**. Clique em gerar. Aguarde a tarefa, o download e a prévia.
+- **NDVI do ortomosaico:** é calculado automaticamente quando RED e NIR podem ser identificados com segurança no GeoTIFF. Caso contrário, selecione manualmente os índices confirmados pelos metadados do sensor.
+- **Dois voos reais do Zenodo:** veja `ZENODO_2_VOOS.md` e `preparar_2_voos_zenodo.py`.
 
-As bandas devem ser da mesma cena, alinhadas, na mesma escala radiométrica; RGB comum não equivale a RED+NIR. GeoTIFF multibanda deve ser separado antes. O endpoint `POST /api/v1/captures` é compatível com o script de envio da versão NDVI standalone.
-
-### Pastas geradas automaticamente
+## Dados gerados (não são código Git)
 
 ```text
-ndvi/armazenamento/
-  entrada/<voo>/<captura>/       # pares aguardando processamento
-  processadas/<voo>/<captura>/
-     originais/red.png            # ou TIFF
-     originais/nir.png
-     ndvi_mapa.png
-     ndvi_valores.npy
-     mapa_areas_atencao.png
-     mascara_atencao.png
-     areas_atencao.json
-     resumo.json
-  erros/<voo>/<captura>/
-  dados/capturas.sqlite3
+armazenamento/
+├── entrada/<voo>/<captura>/
+├── analisadas/<voo>/<captura>/
+├── ortomosaicos/<voo>/
+│   ├── orthophoto.tif
+│   ├── preview.png
+│   ├── ndvi_ortomosaico.tif
+│   ├── ndvi_ortomosaico.png
+│   └── processamento.json
+├── voos_originais/<voo>/
+└── dados/capturas.sqlite3
 ```
 
-Também pode copiar manualmente `red.png` e `nir.png` para uma pasta `entrada/<voo>/<captura>/`: o monitor local detecta pares completos após alguns segundos.
+**Atenção:** o GeoTIFF NDVI preserva georreferenciamento do mosaico, mas o módulo não calibra automaticamente reflectância nem valida deslocamentos entre bandas. NDVI bruto não comprova estresse nutricional.
 
-### Rotas
+## Manuais
 
-- `GET /` — painel web
-- `GET /health` — saúde do receptor
-- `POST /api/v1/captures` — upload autenticado, multipart com `red`, `nir`, `capture_id`, `flight_id`; metadados opcionais `latitude`, `longitude`, `captured_at`
-- `GET /api/v1/captures` — capturas recentes
-- `GET /api/v1/captures/<id>` — dados e regiões
-- `GET /media/<id>/<arquivo>` — imagens de captura processada
+- [Guia de uso](COMO_USAR.md)
+- [Atualizar e rodar no Ubuntu](COMO_RODAR.md)
+- [Importador multiespectral](IMPORTADOR_GENERICO.md)
+- [WebODM](WEBODM_COMO_USAR.md)
+- [NDVI de ortomosaico](NDVI_ORTOMOSAICO.md)
+- [Dois datasets Zenodo](ZENODO_2_VOOS.md)
 
-### Limites e próximos passos
-
-Limiar exploratório `AGRODT_NDVI_LIMIAR=0.40` e tamanho mínimo `AGRODT_NDVI_MIN_PIXELS=40`; vegetação aparente = NDVI > 0.20. O sistema não executa co-registro, calibração nem georreferenciamento. NDVI baixo **não comprova deficiência nutricional**; regiões são coordenadas em pixels, não missões do Husky A300.
-
-O painel e as rotas GET estão sem autenticação: usar `--host 0.0.0.0` apenas em rede local confiável; nunca expor diretamente à internet. Na Raspberry real, a execução deve ser validada em hardware.
-
-Dependências: NumPy e Pillow; SQLite e servidor HTTP nativos do Python. Não usa Flask nesta versão; interface em HTML/CSS/JavaScript.
-
-### Testes
-
-```bash
-python3 -m unittest discover -s tests -v
-```
-
-### Atualizar código no notebook
-
-```bash
-git status
-git pull --ff-only origin main
-cd ndvi
-```
-
-Se houver mudanças locais, salve-as antes do pull.
+Não exponha o servidor Python diretamente à internet: as rotas GET de resultados são públicas na rede em que estiver acessível. Para uso local, mantenha o host em `127.0.0.1`.
