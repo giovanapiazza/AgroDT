@@ -84,3 +84,55 @@ curl http://127.0.0.1:8765/api/v1/orthomosaics
 ```
 
 Se a lista vier vazia, confira o caminho de armazenamento em `AGRODT_NDVI_DATA` e verifique se foi executado o comando `download` da tarefa concluida.
+
+
+## NOVO: gerar ortomosaico direto pela interface AgroDT
+
+Na versao atual, **nao e preciso digitar comandos de envio, status ou download** para novos voos.
+
+1. Inicie WebODM e confirme que ele possui um no de processamento ativo.
+2. **Antes de iniciar `app.py`**, configure os dados de conexao no terminal:
+
+```bash
+cd ~/AgroDT/ndvi
+source .venv/bin/activate
+pip install -r requirements-webodm.txt
+
+export WEBODM_URL='http://127.0.0.1:8000'
+read -rp "Usuario WebODM: " WEBODM_USER
+read -rsp "Senha WebODM: " WEBODM_PASSWORD
+echo
+export WEBODM_USER WEBODM_PASSWORD
+
+export AGRODT_API_KEY='agrodt-teste-123'
+python app.py
+```
+
+3. Abra http://127.0.0.1:8765 e localize **Ortomosaicos dos voos (WebODM)**.
+4. Informe a chave `AGRODT_API_KEY` (nao a senha do WebODM).
+5. Para fotos que ja estao em `ndvi/data/<voo>/`, selecione o voo e clique **Gerar ortomosaico do voo**.
+6. Alternativamente, coloque fotos **originais** de um unico voo num ZIP, indique identificador e clique **Enviar ZIP e gerar ortomosaico**.
+
+A interface atualiza as tarefas automaticamente a cada 10 segundos. O backend cria um projeto/tarefa no WebODM, acompanha o status, faz download de `orthophoto.tif` quando estiver concluido e tenta gerar `preview.png` para exibicao no mesmo painel. Se a sessao do app.py for reiniciada apos o WebODM aceitar uma tarefa e salvar os IDs, o monitoramento dela e retomado automaticamente.
+
+**Limites:** ZIP ate 600 MiB, maximo de 600 fotografias, um mesmo nome de arquivo por voo, e ate 1,4 GiB descompactados. Os originais ficam em `armazenamento/voos_originais/<voo>/` e nao sao modificados. Fotos originais de um voo devem ter sobreposicao; um conjunto de pares RED/NIR sem sobreposicao suficiente pode falhar no WebODM. Se o servidor reiniciar *durante* o upload inicial ao WebODM e ainda nao tiver IDs remotos, confirme no WebODM antes de reenviar para evitar uma tarefa duplicada.
+
+O status e gravado em `armazenamento/ortomosaicos/<voo>/processamento.json`, sem salvar credenciais do WebODM. O backend utiliza credenciais definidas no ambiente; o navegador nunca recebe a senha do WebODM. Para operacao em rede, proteja a interface AgroDT e utilize conexao HTTPS conforme a infraestrutura.
+
+O processamento do NDVI sobre o mosaico multibanda continua sendo uma etapa separada, dependente de identificacao das bandas e calibracao. Esta integracao **nao** gera automaticamente um NDVI georreferenciado de todo o voo.
+
+### Endpoints do painel
+
+- `GET /api/v1/orthomosaics/sources` — lista voos locais com fotografias originais.
+- `GET /api/v1/orthomosaics` — lista mosaicos e estados de processamento.
+- `POST /api/v1/orthomosaics/upload` — recebe ZIP original (header `X-Flight-ID`; exige `X-API-Key`).
+- `POST /api/v1/orthomosaics/start` — inicia trabalho (JSON `{"flight_id":"voo_01","source":"data"}`; exige `X-API-Key`).
+- `GET /orthomosaics/<voo>/preview.png` — exibe a previa PNG.
+
+### Testes de desenvolvimento
+
+```bash
+python -m unittest discover -s tests -v
+```
+
+Os testes automatizados para WebODM usam API simulada e nao substituem o teste com suas credenciais e WebODM real no Ubuntu.
