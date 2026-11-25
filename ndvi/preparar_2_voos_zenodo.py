@@ -46,28 +46,28 @@ def index_band(archive, band):
     return {key: items[0] for key, items in groups.items() if len(items) == 1}
 
 
-def select_captures(archives, start, quantity):
+def select_captures(archives, start, quantity, bands=BANDS):
     indices = {band: index_band(archive, band) for band, archive in archives.items()}
-    keys = sorted(set.intersection(*(set(indices[band]) for band in BANDS)))
+    keys = sorted(set.intersection(*(set(indices[band]) for band in bands)))
     if len(keys) < start + quantity - 1:
         raise ValueError(
             f"Somente {len(keys)} capturas RED/NIR/GRE/REG pareadas; "
             f"impossivel selecionar posicoes {start} a {start + quantity - 1}"
         )
-    return [(key, {band: indices[band][key] for band in BANDS})
+    return [(key, {band: indices[band][key] for band in bands})
             for key in keys[start - 1: start - 1 + quantity]]
 
 
-def create_archive(archives, dataset, start, quantity, output):
-    captures = select_captures(archives, start, quantity)
+def create_archive(archives, dataset, start, quantity, output, bands=BANDS):
+    captures = select_captures(archives, start, quantity, bands)
     output = Path(output)
     output.parent.mkdir(parents=True, exist_ok=True)
     temp = output.with_suffix(".part")
     manifest = {
         "dataset": dataset, "zenodo_record": DATASETS[dataset]["record"],
         "source_url": f"https://zenodo.org/records/{DATASETS[dataset]['record']}",
-        "capture_count": quantity, "file_count": quantity * len(BANDS),
-        "capture_start": start, "bands": list(BANDS),
+        "capture_count": quantity, "file_count": quantity * len(bands),
+        "capture_start": start, "bands": list(bands),
         "scientific_note": "Imagens originais. NDVI exige calibracao e registro das bandas.",
         "captures": [],
     }
@@ -77,7 +77,7 @@ def create_archive(archives, dataset, start, quantity, output):
                 output_number = offset + 1
                 record = {"capture_number": output_number, "source_capture_key": capture_key,
                           "source_files": {}}
-                for band in BANDS:
+                for band in bands:
                     member = members[band]
                     contents = archives[band].read(member)
                     if len(contents) != member.file_size or contents[:4] not in TIFF_SIGNATURES:
@@ -96,7 +96,7 @@ def create_archive(archives, dataset, start, quantity, output):
     return output
 
 
-def read_zenodo_files(record_id):
+def read_zenodo_files(record_id, bands=BANDS):
     import requests
     response = requests.get(f"https://zenodo.org/api/records/{record_id}", timeout=45)
     response.raise_for_status()
@@ -107,27 +107,29 @@ def read_zenodo_files(record_id):
         url = item.get("links", {}).get("content")
         if url and filename:
             lookup[filename] = url
-    missing = [f"{band}.ZIP" for band in BANDS if f"{band}.ZIP" not in lookup]
+    missing = [f"{band}.ZIP" for band in bands if f"{band}.ZIP" not in lookup]
     if missing:
         raise ValueError(f"Registro {record_id} sem arquivos obrigatorios: {missing}")
-    return {band: lookup[f"{band}.ZIP"] for band in BANDS}
+    return {band: lookup[f"{band}.ZIP"] for band in bands}
 
 
-def open_sources(stack, dataset, local_dir):
+def open_sources(stack, dataset, local_dir, bands=BANDS):
     if local_dir:
         folder = Path(local_dir).expanduser()
-        files = {band: folder / (band + ".zip") for band in BANDS}
+        files = {band: folder / (band + ".zip") for band in bands}
         missing = [str(path) for path in files.values() if not path.is_file()]
         if missing:
             raise ValueError("Faltam ZIPs locais: " + ", ".join(missing))
         return {band: stack.enter_context(ZipFile(path)) for band, path in files.items()}
     from remotezip import RemoteZip
-    urls = read_zenodo_files(DATASETS[dataset]["record"])
-    return {band: stack.enter_context(RemoteZip(urls[band])) for band in BANDS}
+    urls = read_zenodo_files(DATASETS[dataset]["record"], bands)
+    return {band: stack.enter_context(RemoteZip(urls[band])) for band in bands}
 
 
 def main():
     parser = argparse.ArgumentParser(description="Baixar 30 capturas de dois voos distintos do Zenodo")
+    parser.add_argument("--bandas", default="RED,NIR,GRE,REG",
+                        help="Bandas por captura: RED,NIR ou RED,NIR,GRE,REG")
     parser.add_argument("--capturas", type=int, default=30,
                         help="Posicoes de captura por missao (30 capturas * 4 bandas = 120 TIFFs)")
     parser.add_argument("--inicio-adm3", type=int, default=1)
@@ -136,6 +138,9 @@ def main():
     parser.add_argument("--adm3-local", type=Path, help="Pasta local com RED.zip, NIR.zip, GRE.zip e REG.zip do ADM3")
     parser.add_argument("--ufrgs-local", type=Path, help="Pasta local com quatro ZIPs do UFRGS")
     args = parser.parse_args()
+    bands = tuple(b.strip().upper() for b in args.bandas.split(",") if b.strip())
+    if bands not in (("RED", "NIR"), ("RED", "NIR", "GRE", "REG")):
+        parser.error("Use --bandas RED,NIR ou --bandas RED,NIR,GRE,REG")
     if not 1 <= args.capturas <= 100 or args.inicio_adm3 < 1 or args.inicio_ufrgs < 1:
         parser.error("Use 1..100 capturas e posicoes iniciais >= 1")
     if not args.adm3_local or not args.ufrgs_local:
@@ -152,9 +157,9 @@ def main():
             ("UFRGS", args.inicio_ufrgs, args.ufrgs_local),
         ):
             with ExitStack() as stack:
-                archives = open_sources(stack, dataset, local)
-                dest = args.saida / f"webodm_{dataset}_{args.capturas}_capturas.zip"
-                results.append(str(create_archive(archives, dataset, start, args.capturas, dest)))
+                archives = open_sources(stack, dataset, local, bands)
+                dest = args.saida / f"webodm_{dataset}_{args.capturas}_capturas_{len(bands)}bandas.zip"
+                results.append(str(create_archive(archives, dataset, start, args.capturas, dest, bands)))
         print("\nArquivos gerados:")
         for path in results:
             print(path)
