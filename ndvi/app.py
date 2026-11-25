@@ -442,7 +442,8 @@ class Handler(BaseHTTPRequestHandler):
                 state = read_orthomosaic_state(ROOT, mosaic["flight_id"])
                 if state:
                     mosaic.update({k: state[k] for k in ("status", "message",
-                        "progress", "project_id", "task_id", "updated_at", "source")
+                        "progress", "project_id", "task_id", "updated_at", "source",
+                        "ndvi_status", "ndvi_message")
                         if k in state})
             return self.json_response(200, {"orthomosaics": mosaics})
         if path.startswith("/api/v1/orthomosaics/"):
