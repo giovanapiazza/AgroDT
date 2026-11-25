@@ -215,30 +215,30 @@ def _worker(root, flight_id, image_paths=None):
         out = output_dir(root, flight_id) / "orthophoto.tif"
         download_orthophoto(token, address, pid, tid, out)
         save_state(root, flight_id, status="generating_preview", progress=99,
-                   message="Criando preview PNG para o painel")
+                   message="Criando previa PNG para o painel")
         try:
             info = build_preview(out)
-            save_state(root, flight_id, status="calculating_ndvi", progress=99,
-                       message="Ortomosaico pronto. Identificando bandas RED/NIR...",
-                       bands=info.get("bands"), width=info.get("width"),
-                       height=info.get("height"), crs=info.get("crs"))
-            from orthomosaic_ndvi import calculate_orthomosaic_ndvi, BandSelectionRequired
-            try:
-                ndvi_report = calculate_orthomosaic_ndvi(out, out.parent)
-                save_state(root, flight_id, status="completed", progress=100,
-                           ndvi_status="ready", ndvi_report=ndvi_report,
-                           message="Ortomosaico e NDVI prontos no painel")
-            except BandSelectionRequired as exc:
-                save_state(root, flight_id, status="completed", progress=100,
-                           ndvi_status="needs_bands", ndvi_message=str(exc)[:300],
-                           message="Ortomosaico pronto; selecione RED/NIR para calcular NDVI")
-            except Exception as exc:
-                save_state(root, flight_id, status="completed", progress=100,
-                           ndvi_status="failed", ndvi_message=str(exc)[:300],
-                           message="Ortomosaico pronto; falha ao calcular NDVI")
+            save_state(root, flight_id, bands=info.get("bands"),
+                       width=info.get("width"), height=info.get("height"),
+                       crs=info.get("crs"))
+        except Exception as exc:
+            save_state(root, flight_id, preview_message="Previa indisponivel: " + str(exc)[:180])
+        save_state(root, flight_id, status="calculating_ndvi", progress=99,
+                   message="Identificando bandas RED/NIR do ortomosaico...")
+        from orthomosaic_ndvi import calculate_orthomosaic_ndvi, BandSelectionRequired
+        try:
+            ndvi_report = calculate_orthomosaic_ndvi(out, out.parent)
+            save_state(root, flight_id, status="completed", progress=100,
+                       ndvi_status="ready", ndvi_report=ndvi_report,
+                       message="Ortomosaico e NDVI prontos no painel")
+        except BandSelectionRequired as exc:
+            save_state(root, flight_id, status="completed", progress=100,
+                       ndvi_status="needs_bands", ndvi_message=str(exc)[:300],
+                       message="Ortomosaico pronto; selecione RED/NIR para calcular NDVI")
         except Exception as exc:
             save_state(root, flight_id, status="completed", progress=100,
-                       ndvi_status="not_run", message="GeoTIFF pronto; preview indisponivel: " + str(exc)[:180])
+                       ndvi_status="failed", ndvi_message=str(exc)[:300],
+                       message="Ortomosaico pronto; falha ao calcular NDVI")
     except Exception as exc:
         save_state(root, flight_id, status="failed", message=str(exc)[:300])
     finally:
