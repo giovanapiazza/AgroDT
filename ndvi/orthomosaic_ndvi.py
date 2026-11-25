@@ -171,8 +171,7 @@ def main():
         print(json.dumps(calculate_orthomosaic_ndvi(args.arquivo, args.arquivo.parent,
                    args.red, args.nir), indent=2, ensure_ascii=False))
     except (ValueError, RuntimeError) as exc:
-        parser.exit(1, f"Erro: {exc}
-")
+        parser.exit(1, f"Erro: {exc}\\n")
 
 
 if __name__ == "__main__":
