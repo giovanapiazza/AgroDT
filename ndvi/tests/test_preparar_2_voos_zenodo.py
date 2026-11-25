@@ -49,6 +49,31 @@ class TwoZenodoMissionsTests(unittest.TestCase):
             with ZipFile(folder / "ADM3.zip") as first, ZipFile(folder / "UFRGS.zip") as second:
                 self.assertNotEqual(first.namelist(), second.namelist())
 
+    def test_exactly_30_files_with_15_red_nir_pairs(self):
+        with tempfile.TemporaryDirectory() as tmp:
+            folder = Path(tmp)
+            for mission in ("ADM3", "UFRGS"):
+                base = folder / mission
+                base.mkdir()
+                for band in ("RED", "NIR"):
+                    with ZipFile(base / (band + ".zip"), "w") as archive:
+                        for number in range(1, 16):
+                            archive.writestr(f"IMG_{mission}_{number:04d}_{band}.TIF",
+                                             tif(13000 + number))
+            for mission in ("ADM3", "UFRGS"):
+                with ExitStack() as stack:
+                    archives = datasets.open_sources(stack, mission, folder / mission,
+                                                     ("RED", "NIR"))
+                    out = datasets.create_archive(archives, mission, 1, 15,
+                                                  folder / (mission + "_30.zip"),
+                                                  ("RED", "NIR"))
+                with ZipFile(out) as archive:
+                    tif_files = [name for name in archive.namelist() if name.endswith(".TIF")]
+                    self.assertEqual(len(tif_files), 30)
+                    manifest = json.loads(archive.read("ORIGEM_ZENODO.json"))
+                    self.assertEqual(manifest["file_count"], 30)
+                    self.assertEqual(manifest["bands"], ["RED", "NIR"])
+
     def test_refuse_missing_captures(self):
         with tempfile.TemporaryDirectory() as tmp:
             root = Path(tmp)
