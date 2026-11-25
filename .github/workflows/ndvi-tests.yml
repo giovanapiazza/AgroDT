@@ -1,0 +1,45 @@
+name: NDVI - Testes automatizados
+
+on:
+  push:
+    branches: [main]
+    paths:
+      - 'ndvi/**'
+      - '.github/workflows/ndvi-tests.yml'
+  pull_request:
+    paths:
+      - 'ndvi/**'
+      - '.github/workflows/ndvi-tests.yml'
+  workflow_dispatch:
+
+permissions:
+  contents: read
+
+jobs:
+  ndvi:
+    runs-on: ubuntu-24.04
+    timeout-minutes: 15
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-python@v5
+        with:
+          python-version: '3.12'
+      - name: Instalar dependencias NDVI/WebODM
+        run: |
+          python -m pip install --upgrade pip
+          python -m pip install -r ndvi/requirements-webodm.txt
+      - name: Compilar fontes Python
+        run: python -m compileall -q ndvi
+      - name: Executar suite completa
+        working-directory: ndvi
+        run: python -m unittest discover -s tests -v
+      - name: Validar sintaxe JavaScript do painel
+        run: |
+          node - <<'JS'
+          const fs = require('fs');
+          const html = fs.readFileSync('ndvi/templates/index.html', 'utf8');
+          const scripts = [...html.matchAll(/<script\b[^>]*>([\s\S]*?)<\/script>/g)];
+          if (!scripts.length) throw Error('HTML sem script');
+          for (const item of scripts) new Function(item[1]);
+          console.log(scripts.length, 'script(s) validado(s)');
+          JS
