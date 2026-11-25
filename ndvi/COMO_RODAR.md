@@ -1,259 +1,124 @@
-# COMO RODAR — AgroDT / Módulo NDVI
+# Como atualizar e rodar — NDVI + WebODM (Ubuntu 24.04)
 
-Guia para **Ubuntu 24.04**, usando o repositório [giovanapiazza/AgroDT](https://github.com/giovanapiazza/AgroDT), pasta `ndvi/`.
+> Este documento substitui instrucoes das primeiras versoes. A interface atual inclui capturas individuais, importacao de bandas, ortomosaicos WebODM e NDVI do ortomosaico.
 
-O módulo recebe pares de imagens **RED e NIR** por HTTP (ou pela pasta de entrada), calcula NDVI, identifica regiões de atenção, salva os resultados em **SQLite** e apresenta uma **interface web**. **Não** envia missões para o Husky nesta versão.
+## 1. Encerrar o que estiver rodando
 
-> **Importante:** este módulo é diferente do projeto standalone `agrodt-ndvi-deteccao-areas`. Os arquivos e testes de versões antigas **não são importados automaticamente**. O módulo integrado ao GitHub usa `ndvi/app.py` e abre a interface na porta **8765**.
+Encerre com Ctrl+C qualquer `python app.py`, simulador ou script NDVI. O WebODM em Docker pode continuar funcionando.
 
-## 1. Atualizar o repositório no notebook
+## 2. Atualizar o GitHub no notebook (sobrescrever arquivos monitorados)
 
-Abra um terminal:
-
-```bash
-cd ~/AgroDT
-git status
-```
-
-### Se aparecer `working tree clean` e NÃO houver divergência
-
-```bash
-git pull --ff-only origin main
-```
-
-### Se o Git disser que as branches divergem
-
-No seu caso, o Git já informou `Diverging branches can't be fast-forwarded` e o `git status` mostrou arquivos **excluídos em `Site/venv/`**, além de pastas não monitoradas. Faça com cuidado:
+**Antes de atualizar, confira**:
 
 ```bash
 cd ~/AgroDT
-
-# Guarde as exclusões/modificações monitoradas apenas de Site/venv:
-git stash push -m "Backup Site/venv antes do NDVI" -- Site/venv
-
-# Confira as alterações restantes:
 git status --short
-```
-
-**Só continue se não restarem arquivos monitorados marcados como modificados/excluídos** (`M`, `D`, etc.). Arquivos **não monitorados** indicados por `??`, como `agrobot-simulation/`, devem permanecer intactos. Se houver outras alterações monitoradas, resolva ou faça backup antes de seguir.
-
-```bash
-# Crie um marcador de backup da branch local:
-git branch "backup-main-antes-ndvi-$(date +%Y%m%d-%H%M%S)"
-
-# Busque e integre a atualização, preservando o histórico local:
 git fetch origin main
-git merge --no-ff origin/main
 ```
 
-Se abrir um editor para a mensagem de merge, aceite a mensagem padrão. Se aparecer `CONFLICT`, **não use `reset --hard` ou `clean -fd`**; verifique `git status` e resolva os conflitos antes de continuar. **Não execute `git stash pop` para `Site/venv`**, pois isso pode reaplicar as exclusões que você acabou de guardar.
-
-Verifique se o módulo apareceu:
+Para atualizar **todo o repositório**, descartando modificações locais *em arquivos monitorados*:
 
 ```bash
-ls ~/AgroDT/ndvi
+git branch "backup-local-$(date +%Y%m%d_%H%M%S)"
+git reset --hard origin/main
 ```
 
-Deverão aparecer `app.py`, `send_capture.py`, `gerar_demo.py`, `templates/`, `requirements.txt` e `README.md`.
+Isso **não** exclui automaticamente arquivos não monitorados, o ambiente `.venv` ou dados ignorados por `.gitignore`. Não execute `git clean -fdx`: ele apagaria também arquivos de dados e ambientes virtuais.
 
-## 2. Primeira instalação (uma única vez)
+Se quiser substituir **apenas a pasta NDVI** e preservar outros projetos:
+
+```bash
+git fetch origin main
+git restore --source=origin/main --staged --worktree ndvi/
+```
+
+Para inspecionar arquivos não rastreados antes de excluí-los:
+
+```bash
+git clean -nd ndvi/
+```
+
+Só use `git clean -fd ndvi/` depois de ler a prévia e salvar seus arquivos pessoais. Arquivos ignorados permanecem, mas a exclusão de arquivos não rastreados é irreversível sem backup.
+
+## 3. Instalar dependências atuais
 
 ```bash
 cd ~/AgroDT/ndvi
-sudo apt update
-sudo apt install -y python3 python3-venv python3-numpy python3-pil
-python3 -m venv --system-site-packages .venv
+python3 -m venv .venv
 source .venv/bin/activate
-python3 -c 'import numpy, PIL; print("Bibliotecas instaladas")'
+python -m pip install -r requirements-webodm.txt
 ```
 
-> Use **aspas simples por fora** no comando `python3 -c`, pois o Bash pode interpretar `!` dentro de aspas duplas como expansão do histórico.
+Se o ambiente virtual já existe, basta ativá-lo e executar o comando `pip install -r`.
 
-## 3. Terminal 1 — iniciar receptor e interface
+## 4. Testar código e arquivos
 
 ```bash
-cd ~/AgroDT/ndvi
-source .venv/bin/activate
-export AGRODT_API_KEY='chave-local-teste-2026'
-python3 app.py --host 127.0.0.1 --port 8765
+python -m compileall -q .
+python -m unittest discover -s tests -v
+git -C ~/AgroDT rev-parse --short HEAD
 ```
 
-Mantenha esse terminal aberto. No navegador, acesse:
+O NDVI também tem testes GitHub Actions em `.github/workflows/ndvi-tests.yml`.
 
-**http://127.0.0.1:8765**
-
-O painel lista as capturas, mostra as imagens RED e NIR, o mapa NDVI, as regiões de atenção e os números calculados. Ele se atualiza aproximadamente a cada cinco segundos.
-
-Para verificar se o receptor está funcionando em outro terminal:
+## 5. Verificar WebODM
 
 ```bash
-curl http://127.0.0.1:8765/health
+cd ~/WebODM
+./webodm.sh start
 ```
 
-## 4. Terminal 2 — primeiro teste (imagens de demonstração)
-
-Abra **outro terminal**:
+Em outro terminal:
 
 ```bash
-cd ~/AgroDT/ndvi
-source .venv/bin/activate
-export AGRODT_API_KEY='chave-local-teste-2026'
-
-# Criar um par sintético RED/NIR para verificar o funcionamento:
-python3 gerar_demo.py
-
-# Enviar as duas bandas ao receptor:
-python3 send_capture.py \
-  --red data/demo/red.png \
-  --nir data/demo/nir.png \
-  --capture-id foto_001 \
-  --flight-id voo_demo_01
+docker ps
+curl -I http://127.0.0.1:8000
 ```
 
-O resultado esperado é um JSON com `"http_status": 201` e `"status": "processed"`. Volte à interface para ver a captura. Esse teste é **sintético**, adequado para validar o fluxo de software; não é evidência de uma condição real na plantação.
+A interface WebODM deverá abrir em http://127.0.0.1:8000, com um nó de processamento configurado.
 
-## 5. Fazer um segundo teste
-
-As capturas são identificadas por `capture_id`, que precisa ser **único em todo o banco**. Por exemplo:
-
-```bash
-python3 send_capture.py \
-  --red data/demo/red.png \
-  --nir data/demo/nir.png \
-  --capture-id foto_002 \
-  --flight-id voo_demo_02
-```
-
-**Atenção:** esse comando reenvia as mesmas imagens sintéticas, apenas com outro identificador. Para avaliar imagens diferentes, use arquivos RED/NIR diferentes, como indicado na próxima seção.
-
-## 6. Testar imagens reais RED e NIR
-
-O módulo **não baixa imagens reais automaticamente**. Se você já tiver dois arquivos RED e NIR monocromáticos alinhados, execute:
-
-```bash
-python3 send_capture.py \
-  --red /caminho/para/RED.tif \
-  --nir /caminho/para/NIR.tif \
-  --flight-id voo_real_01 \
-  --capture-id captura_real_001
-```
-
-Requisitos: as bandas precisam ser da **mesma cena**, ter as **mesmas dimensões**, estar **alinhadas** e usar intensidades radiometricamente comparáveis. Uma foto RGB comum não basta para calcular NDVI convencional. Um GeoTIFF multibanda precisa ter as bandas separadas antes de usar este comando. Os dados de satélite Sentinel-2 e os exemplos MicaSense são fontes possíveis, mas **não estão integrados como download automático nesta versão GitHub**.
-
-## 7. Onde ficam as imagens?
-
-Todo o armazenamento fica em `~/AgroDT/ndvi/armazenamento/`:
-
-```text
-ndvi/
-├── data/
-│   └── demo/
-│       ├── red.png
-│       └── nir.png
-└── armazenamento/
-    ├── entrada/                   # arquivos aguardando processamento
-    ├── processadas/
-    │   └── voo_demo_01/
-    │       └── foto_001/
-    │           ├── originais/
-    │           │   ├── red.png
-    │           │   └── nir.png
-    │           ├── ndvi_mapa.png
-    │           ├── ndvi_valores.npy
-    │           ├── mapa_areas_atencao.png
-    │           ├── mascara_atencao.png
-    │           ├── areas_atencao.json
-    │           └── resumo.json
-    ├── erros/                     # pares que falharam
-    └── dados/
-        └── capturas.sqlite3       # banco de dados SQLite
-```
-
-Abra a pasta com todas as capturas processadas:
-
-```bash
-xdg-open ~/AgroDT/ndvi/armazenamento/processadas
-```
-
-Abra apenas os resultados do primeiro voo:
-
-```bash
-xdg-open ~/AgroDT/ndvi/armazenamento/processadas/voo_demo_01
-```
-
-Abra o mapa NDVI e o mapa de atenção da captura:
-
-```bash
-xdg-open ~/AgroDT/ndvi/armazenamento/processadas/voo_demo_01/foto_001/ndvi_mapa.png
-xdg-open ~/AgroDT/ndvi/armazenamento/processadas/voo_demo_01/foto_001/mapa_areas_atencao.png
-```
-
-Após um processamento bem-sucedido, a pasta `entrada` fica vazia porque as imagens são **movidas automaticamente** para `processadas/`, junto dos resultados. Se falhar, os arquivos ficam em `erros/`.
-
-## 8. Opção alternativa: copiar imagens manualmente para a entrada
-
-Com o **Terminal 1** em execução:
-
-```bash
-cd ~/AgroDT/ndvi
-mkdir -p armazenamento/entrada/voo_manual_01/captura_manual_001
-cp data/demo/red.png armazenamento/entrada/voo_manual_01/captura_manual_001/red.png
-cp data/demo/nir.png armazenamento/entrada/voo_manual_01/captura_manual_001/nir.png
-```
-
-O monitor detectará automaticamente o par após alguns segundos, processará os arquivos e os moverá para `processadas/voo_manual_01/captura_manual_001/`.
-
-## 9. Próximas vezes que abrir o notebook
-
-Não é necessário reinstalar bibliotecas nem recriar a `.venv`.
-
-**Terminal 1:**
+## 6. Iniciar AgroDT com WebODM integrado
 
 ```bash
 cd ~/AgroDT/ndvi
 source .venv/bin/activate
-export AGRODT_API_KEY='chave-local-teste-2026'
-python3 app.py --host 127.0.0.1 --port 8765
+
+export WEBODM_URL="http://127.0.0.1:8000"
+read -rp "Usuário WebODM: " WEBODM_USER
+read -rsp "Senha WebODM: " WEBODM_PASSWORD
+echo
+export WEBODM_USER WEBODM_PASSWORD
+
+export AGRODT_API_KEY="agrodt-teste-123"
+python app.py
 ```
 
-**Terminal 2:**
+Abra http://127.0.0.1:8765 (Ctrl+Shift+R). Os resultados antigos não reaparecem se você já arquivou `armazenamento/` usando `limpar_historico.py`.
+
+## 7. Teste da simulação de drone
+
+Em outro terminal:
 
 ```bash
 cd ~/AgroDT/ndvi
 source .venv/bin/activate
-export AGRODT_API_KEY='chave-local-teste-2026'
-# Envie o próximo par RED/NIR com um capture_id novo.
+export AGRODT_API_KEY="agrodt-teste-123"
+python simular_drone.py --quantidade 10 --intervalo 1 --flight-id teste_simulado_01
 ```
 
-## 10. Testes de código
+O painel deve apresentar 10 análises. Esses dados são sintéticos.
 
-Com o ambiente virtual ativado:
+## 8. Teste de ortomosaico com duas missões reais
 
-```bash
-cd ~/AgroDT/ndvi
-python3 -m unittest discover -s tests -v
-```
+Consulte [ZENODO_2_VOOS.md](ZENODO_2_VOOS.md) para tentar obter dois ZIPs reais de voos independentes. Na seção **Ortomosaicos dos voos** do AgroDT, envie um ZIP, indique um ID único para o voo, informe a chave `AGRODT_API_KEY` e clique em **Enviar ZIP e gerar ortomosaico**.
 
-## 11. Problemas comuns
+Depois de o WebODM concluir, confira na seção do voo:
+- ortomosaico `preview.png` e `orthophoto.tif`;
+- mapa `ndvi_ortomosaico.png` se as bandas RED e NIR forem detectadas;
+- ou mensagem para escolher as bandas manualmente, quando necessário.
 
-| Mensagem | O que verificar |
-|---|---|
-| `Diverging branches can't be fast-forwarded` | Sua `main` local tem commits diferentes; veja a seção 1 para fazer merge preservando histórico. |
-| `CONFLICT` no merge | Pare e veja `git status`. Não apague os arquivos sem avaliar o conflito. |
-| `Address already in use` | Outro receptor está usando a porta 8765; encerre-o ou escolha outra porta e atualize `--pi`. |
-| `401` | A variável `AGRODT_API_KEY` precisa estar igual no receptor e no envio. |
-| `409` | O `capture_id` já existe; use outro identificador. |
-| `422` | Verifique as dimensões, formato monocromático e integridade das bandas. |
-| Interface vazia | Confirme se o envio retornou HTTP 201 e se você abriu `http://127.0.0.1:8765`. |
-| `ModuleNotFoundError` | Confirme `source .venv/bin/activate` e a instalação das bibliotecas. |
+Se a tarefa WebODM falhar, veja o log no WebODM e os estados em `armazenamento/ortomosaicos/<voo>/processamento.json`.
 
-## 12. Limitações importantes
+## 9. Arquivos locais e backups
 
-- Valores baixos de NDVI indicam **possíveis regiões de atenção**; não confirmam falta de nutrientes, doença ou necessidade de pulverização.
-- As regiões detectadas usam coordenadas em **pixels**, ainda não coordenadas geográficas para o Husky A300.
-- O painel e as rotas de leitura **não têm autenticação** nesta versão. Use `127.0.0.1` para testes locais; não exponha o serviço diretamente à internet.
-- A execução em Raspberry Pi física ainda precisa ser validada no equipamento.
-
----
-
-**Arquivos do módulo:** [repositório GitHub / ndvi](https://github.com/giovanapiazza/AgroDT/tree/main/ndvi).
+Pastas `armazenamento/`, `data/`, `.venv/` e `armazenamento_backup_*/` são conteúdo local e não fazem parte do código versionado. Não exclua essas pastas ao atualizar. O comando `python limpar_historico.py`, com servidor parado, arquiva dados existentes e inicia um painel vazio na próxima execução.
