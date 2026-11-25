@@ -6,3 +6,9 @@ armazenamento/
 data/
 *.sqlite3
 .env
+
+# Backups e fotos locais gerados fora do Git
+armazenamento_backup_*/
+voos_originais/
+pacotes_zenodo_webodm/
+*.part
