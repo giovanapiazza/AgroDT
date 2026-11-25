@@ -257,15 +257,17 @@ def calculate_existing_ndvi(root, flight_id, red_index, nir_index):
         source = output_dir(root, flight_id) / "orthophoto.tif"
         if not source.is_file():
             raise ValueError("Ortomosaico nao encontrado; conclua o processamento WebODM primeiro")
+        if state.get("ndvi_status") == "processing":
+            raise ValueError("O NDVI deste voo ja esta sendo calculado")
         save_state(root, flight_id, ndvi_status="processing", ndvi_message="Calculando NDVI...")
-        try:
-            result = calculate_orthomosaic_ndvi(source, source.parent, red_index, nir_index)
-            save_state(root, flight_id, ndvi_status="ready", ndvi_report=result,
-                       ndvi_message="NDVI do ortomosaico pronto")
-            return result
-        except Exception as exc:
-            save_state(root, flight_id, ndvi_status="failed", ndvi_message=str(exc)[:300])
-            raise
+    try:
+        result = calculate_orthomosaic_ndvi(source, source.parent, red_index, nir_index)
+        save_state(root, flight_id, ndvi_status="ready", ndvi_report=result,
+                   ndvi_message="NDVI do ortomosaico pronto")
+        return result
+    except Exception as exc:
+        save_state(root, flight_id, ndvi_status="failed", ndvi_message=str(exc)[:300])
+        raise
 
 
 def start_job(root, here, flight_id, source="data", retry=False):
