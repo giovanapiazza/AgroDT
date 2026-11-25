@@ -11,6 +11,8 @@
 
 Veja o procedimento detalhado em [WEBODM_COMO_USAR.md](WEBODM_COMO_USAR.md). O WebODM precisa estar instalado e configurado no computador que executa a API AgroDT. O processamento de NDVI **sobre o ortomosaico completo** nao e automatico ainda.
 
+Este guia documenta a importação e análise das capturas individuais. Para gerar ortomosaicos pelo site, usar dados reais de dois voos do Zenodo e executar NDVI georreferenciado, consulte também [COMO_RODAR.md](COMO_RODAR.md), [WEBODM_COMO_USAR.md](WEBODM_COMO_USAR.md), [NDVI_ORTOMOSAICO.md](NDVI_ORTOMOSAICO.md) e [ZENODO_2_VOOS.md](ZENODO_2_VOOS.md).
+
 Fluxo: **drone simulado → API HTTP → processamento NDVI (PC ou Raspberry Pi) → pasta `armazenamento/analisadas/` → painel HTML**.
 
 ## Instalar (primeira vez)
