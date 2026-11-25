@@ -27,7 +27,7 @@ from orthomosaic_catalog import list_mosaics
 from orthomosaic_dashboard import (list_sources as list_orthomosaic_sources,
     import_zip as import_flight_zip, start_job as start_orthomosaic_job,
     resume_jobs as resume_orthomosaic_jobs, read_state as read_orthomosaic_state,
-    MAX_ZIP as MAX_FLIGHT_ZIP)
+    calculate_existing_ndvi, MAX_ZIP as MAX_FLIGHT_ZIP)
 
 HERE = Path(__file__).resolve().parent
 ROOT = Path(os.environ.get("AGRODT_NDVI_DATA", HERE / "armazenamento")).resolve()
@@ -424,6 +424,18 @@ class Handler(BaseHTTPRequestHandler):
             return self.json_response(200, {"status": "ok", "service": "agrodt-ndvi"})
         if path == "/api/v1/orthomosaics/sources":
             return self.json_response(200, {"sources": list_orthomosaic_sources(ROOT, HERE)})
+        if path.startswith("/api/v1/orthomosaics/bands/"):
+            flight = path.removeprefix("/api/v1/orthomosaics/bands/")
+            if not SAFE.fullmatch(flight):
+                return self.json_response(400, {"error": "Voo invalido"})
+            source = ROOT / "ortomosaicos" / flight / "orthophoto.tif"
+            if not source.is_file():
+                return self.json_response(404, {"error": "Ortomosaico nao encontrado"})
+            try:
+                from orthomosaic_ndvi import inspect_bands
+                return self.json_response(200, {"flight_id": flight, "bands": inspect_bands(source)})
+            except Exception as exc:
+                return self.json_response(422, {"error": str(exc)[:250]})
         if path == "/api/v1/orthomosaics":
             mosaics = list_mosaics(ROOT)
             for mosaic in mosaics:
@@ -448,7 +460,8 @@ class Handler(BaseHTTPRequestHandler):
             parts = path.strip("/").split("/")
             if len(parts) == 3:
                 _, flight_id, filename = parts
-                if SAFE.fullmatch(flight_id) and filename in ("preview.png", "ortomosaico_info.json"):
+                if SAFE.fullmatch(flight_id) and filename in (
+                    "preview.png", "ortomosaico_info.json", "ndvi_ortomosaico.png", "ndvi_ortomosaico.json"):
                     target = ROOT / "ortomosaicos" / flight_id / filename
                     if target.is_file():
                         mime = "image/png" if filename.endswith(".png") else "application/json; charset=utf-8"
@@ -484,12 +497,30 @@ class Handler(BaseHTTPRequestHandler):
         route = urlsplit(self.path).path
         if route not in ("/api/v1/captures", "/api/v1/import-zip",
                          "/api/v1/import-multiband", "/api/v1/orthomosaics/start",
-                         "/api/v1/orthomosaics/upload"):
+                         "/api/v1/orthomosaics/upload", "/api/v1/orthomosaics/ndvi"):
             return self.json_response(404, {"error": "Rota nao encontrada"})
         if not API_KEY or not hmac.compare_digest(self.headers.get("X-API-Key", ""), API_KEY):
             return self.json_response(401, {"error": "Chave API ausente ou invalida"})
         try:
             size = int(self.headers.get("Content-Length", "0"))
+            if route == "/api/v1/orthomosaics/ndvi":
+                if size <= 0 or size > 4096:
+                    return self.json_response(413, {"error": "JSON invalido ou grande demais"})
+                if self.headers.get("Content-Type", "").split(";")[0].lower() != "application/json":
+                    return self.json_response(415, {"error": "Envie application/json"})
+                try:
+                    request = json.loads(self.rfile.read(size))
+                except (ValueError, UnicodeDecodeError):
+                    raise ValueError("JSON invalido")
+                if not isinstance(request, dict):
+                    raise ValueError("Envie objeto JSON")
+                flight = safe_id(request.get("flight_id", ""), "flight_id")
+                red_index = request.get("red_band")
+                nir_index = request.get("nir_band")
+                if red_index is None or nir_index is None:
+                    raise ValueError("Selecione as duas bandas RED e NIR")
+                result = calculate_existing_ndvi(ROOT, flight, red_index, nir_index)
+                return self.json_response(200, {"flight_id": flight, "ndvi": result})
             if route == "/api/v1/orthomosaics/start":
                 if size <= 0 or size > 4096:
                     return self.json_response(413, {"error": "JSON invalido ou grande demais"})
