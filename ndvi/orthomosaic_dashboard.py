@@ -167,10 +167,10 @@ def _webodm_progress(task):
 
 
 def _worker(root, flight_id, image_paths=None):
-    from orthomosaic_catalog import build_preview
-    from webodm_ortomosaico import (authenticate, project, create_task,
-                                     task_status, download_orthophoto)
     try:
+        from orthomosaic_catalog import build_preview
+        from webodm_ortomosaico import (authenticate, project, create_task,
+                                        task_status, download_orthophoto)
         address, username, password = _credentials()
         token = authenticate(address, username, password)
         state = read_state(root, flight_id) or {}
