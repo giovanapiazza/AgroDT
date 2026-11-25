@@ -172,5 +172,5 @@ def extract_single_band(payload, ext, band_index=1, force_raster=False):
 
 def make_tiff(data):
     buf = BytesIO()
-    Image.fromarray(np.nan_to_num(data, nan=0).astype(np.float32)).save(buf, format="TIFF")
+    Image.fromarray(np.asarray(data, dtype=np.float32)).save(buf, format="TIFF")
     return buf.getvalue()
