@@ -57,6 +57,13 @@ class GenericImporterTests(unittest.TestCase):
         with self.assertRaises(ValueError):
             read_zip(archive.getvalue())
 
+    def test_nan_mask_is_preserved(self):
+        data = np.array([[0.2, float("nan")], [0.7, 0.9]], dtype=np.float32)
+        payload = make_tiff(data)
+        output = extract_single_band(payload, ".tif")
+        self.assertTrue(np.isnan(output[0, 1]))
+        self.assertAlmostEqual(float(output[1, 0]), 0.7, places=5)
+
     def test_array_conversion(self):
         payload = make_tiff(np.full((20, 20), 7, dtype=np.float32))
         self.assertAlmostEqual(float(extract_single_band(payload, ".tif").mean()), 7)
