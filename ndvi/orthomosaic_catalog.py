@@ -69,7 +69,8 @@ def list_mosaics(root):
         metadata = folder / "webodm_tarefa.json"
         info_path = folder / "ortomosaico_info.json"
         result = {"flight_id": folder.name, "has_orthophoto": orthophoto.is_file(),
-                  "has_preview": (folder / "preview.png").is_file()}
+                  "has_preview": (folder / "preview.png").is_file(),
+                  "has_ndvi": (folder / "ndvi_ortomosaico.png").is_file()}
         for p, fields in ((metadata, ("project_id", "task_id", "images_count")),
                           (info_path, ("width", "height", "bands", "crs", "preview_note"))):
             if p.is_file():
@@ -78,5 +79,15 @@ def list_mosaics(root):
                     result.update({field: record[field] for field in fields if field in record})
                 except (ValueError, OSError, TypeError):
                     pass
+        ndvi_report = folder / "ndvi_ortomosaico.json"
+        if ndvi_report.is_file():
+            try:
+                ndvi = json.loads(ndvi_report.read_text(encoding="utf-8"))
+                if isinstance(ndvi, dict):
+                    result["ndvi"] = {key: ndvi[key] for key in (
+                        "mean_ndvi", "min_ndvi", "max_ndvi", "red_band", "nir_band",
+                        "valid_pixels", "selection_method") if key in ndvi}
+            except (ValueError, OSError, TypeError):
+                pass
         results.append(result)
     return results
