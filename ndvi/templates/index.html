@@ -1,6 +1,6 @@
 <!doctype html><html lang="pt-BR"><head><meta charset="utf-8"><meta name="viewport" content="width=device-width,initial-scale=1"><title>AgroDT NDVI</title><style>
 :root{color-scheme:dark;font-family:system-ui;background:#0b1720;color:#e9f5ef}body{margin:0}header{padding:22px 5%;background:#142831;border-bottom:1px solid #36505a;display:flex;justify-content:space-between}.logo{font-size:24px;font-weight:700}.logo b{color:#6bdfa6}main{max-width:1200px;margin:auto;padding:26px 18px}p,small{color:#b9cdd1}.cards{display:grid;grid-template-columns:repeat(4,1fr);gap:12px}.card,.pane{background:#162b35;border:1px solid #34505b;border-radius:13px;padding:17px}.card strong{display:block;font-size:27px;margin-top:8px}.layout{display:grid;grid-template-columns:310px 1fr;gap:16px;margin-top:18px}select,button,input[type=file]{background:#213d48;color:white;border:1px solid #42616a;padding:10px;border-radius:9px;cursor:pointer}button{width:100%;text-align:left;margin:5px 0}.selected{border-color:#78e5a8;background:#285044}.imgs{display:grid;grid-template-columns:1fr 1fr;gap:12px}.imgs img{width:100%;height:220px;object-fit:contain;background:#071117;border-radius:8px}.imgs div{background:#10252e;padding:8px;border-radius:9px}.muted{color:#a8bfc5}table{width:100%;border-collapse:collapse}td,th{text-align:left;padding:9px;border-bottom:1px solid #35515c}.scroll{max-height:650px;overflow:auto}@media(max-width:850px){.layout{grid-template-columns:1fr}.cards{grid-template-columns:1fr 1fr}.imgs{grid-template-columns:1fr}}.upload{margin-top:18px;display:grid;grid-template-columns:1fr auto;gap:10px;align-items:center}.upload button{width:auto;padding:12px 18px}.upload small{grid-column:1/-1}#upload-message{grid-column:1/-1;white-space:pre-wrap}.heatmap-note{font-size:13px;color:#a8bfc5}.imgs img{image-rendering:auto}@media(max-width:600px){.upload{grid-template-columns:1fr}.upload button{width:100%}}
-.import-panel{margin-bottom:14px}.import-toggle{display:flex;align-items:center;justify-content:space-between;width:100%;font-size:18px;font-weight:700;background:transparent;border:0;margin:0;padding:3px 0;text-align:left}.import-toggle:hover{color:#8be4b2}.import-options{display:flex;gap:10px;flex-wrap:wrap;margin:14px 0}.import-option{width:auto;flex:1;min-width:190px;text-align:center}.import-content{display:grid;grid-template-columns:1fr 1fr;align-items:center;gap:10px;margin-top:12px}.import-content p,.import-content small,.import-content [role=status]{grid-column:1/-1}.import-content button{grid-column:1/-1;width:100%;text-align:center}.import-content input[type=file]{min-width:0;width:100%;box-sizing:border-box}.upload-key-line{display:grid;grid-template-columns:1fr 1fr;align-items:center;gap:10px;margin-top:14px}.upload-key-line input{background:#213d48;color:white;border:1px solid #42616a;padding:10px;border-radius:9px;min-width:0}.import-content input[type=number],.import-content select{background:#213d48;color:white;border:1px solid #42616a;padding:10px;border-radius:9px;min-width:0;width:100%;box-sizing:border-box}.import-panel [hidden]{display:none!important}#upload-message,#pair-message,#multi-message{white-space:pre-wrap}@media(max-width:600px){.import-content,.upload-key-line{grid-template-columns:1fr}.import-option{min-width:100%}}.mosaics-section{margin-top:18px}.mosaics-grid{display:grid;grid-template-columns:minmax(200px,320px) 1fr;gap:15px}.mosaics-section select{width:100%}.mosaics-view{min-height:230px;display:flex;flex-direction:column;align-items:center;justify-content:center;background:#0d2029;border-radius:12px;padding:12px;gap:12px}.mosaics-view img{display:block;width:100%;height:auto;max-height:550px;object-fit:contain;border-radius:8px}.mosaics-view p{margin:0}.mosaics-description{font-size:13px;color:#a8bfc5}@media(max-width:800px){.mosaics-grid{grid-template-columns:1fr}}.mosaics-controls{display:grid;grid-template-columns:1fr;gap:8px;align-content:start}.mosaics-controls input{box-sizing:border-box;width:100%;min-width:0;background:#213d48;color:#fff;border:1px solid #42616a;border-radius:9px;padding:10px}.mosaics-controls label{font-size:13px;color:#bed4d7}.mosaics-controls button{width:100%;text-align:center}.mosaics-controls button:disabled{opacity:.55;cursor:wait}.mosaics-divider{padding:9px 0;border-top:1px solid #35515c;text-align:center;color:#bed4d7;font-size:13px}.mosaics-progress{display:flex;align-items:center;gap:8px;margin:8px 0}.mosaics-progress progress{width:100%;accent-color:#6bdfa6}#mosaic-action-message{white-space:pre-wrap;font-size:13px;color:#e4f2f0}.mosaics-progress[hidden]{display:none!important}</style></head><body>
+.import-panel{margin-bottom:14px}.import-toggle{display:flex;align-items:center;justify-content:space-between;width:100%;font-size:18px;font-weight:700;background:transparent;border:0;margin:0;padding:3px 0;text-align:left}.import-toggle:hover{color:#8be4b2}.import-options{display:flex;gap:10px;flex-wrap:wrap;margin:14px 0}.import-option{width:auto;flex:1;min-width:190px;text-align:center}.import-content{display:grid;grid-template-columns:1fr 1fr;align-items:center;gap:10px;margin-top:12px}.import-content p,.import-content small,.import-content [role=status]{grid-column:1/-1}.import-content button{grid-column:1/-1;width:100%;text-align:center}.import-content input[type=file]{min-width:0;width:100%;box-sizing:border-box}.upload-key-line{display:grid;grid-template-columns:1fr 1fr;align-items:center;gap:10px;margin-top:14px}.upload-key-line input{background:#213d48;color:white;border:1px solid #42616a;padding:10px;border-radius:9px;min-width:0}.import-content input[type=number],.import-content select{background:#213d48;color:white;border:1px solid #42616a;padding:10px;border-radius:9px;min-width:0;width:100%;box-sizing:border-box}.import-panel [hidden]{display:none!important}#upload-message,#pair-message,#multi-message{white-space:pre-wrap}@media(max-width:600px){.import-content,.upload-key-line{grid-template-columns:1fr}.import-option{min-width:100%}}.mosaics-section{margin-top:18px}.mosaics-grid{display:grid;grid-template-columns:minmax(200px,320px) 1fr;gap:15px}.mosaics-section select{width:100%}.mosaics-view{min-height:230px;display:flex;flex-direction:column;align-items:center;justify-content:center;background:#0d2029;border-radius:12px;padding:12px;gap:12px}.mosaics-view img{display:block;width:100%;height:auto;max-height:550px;object-fit:contain;border-radius:8px}.mosaics-view p{margin:0}.mosaics-description{font-size:13px;color:#a8bfc5}@media(max-width:800px){.mosaics-grid{grid-template-columns:1fr}}.mosaics-controls{display:grid;grid-template-columns:1fr;gap:8px;align-content:start}.mosaics-controls input{box-sizing:border-box;width:100%;min-width:0;background:#213d48;color:#fff;border:1px solid #42616a;border-radius:9px;padding:10px}.mosaics-controls label{font-size:13px;color:#bed4d7}.mosaics-controls button{width:100%;text-align:center}.mosaics-controls button:disabled{opacity:.55;cursor:wait}.mosaics-divider{padding:9px 0;border-top:1px solid #35515c;text-align:center;color:#bed4d7;font-size:13px}.mosaics-progress{display:flex;align-items:center;gap:8px;margin:8px 0}.mosaics-progress progress{width:100%;accent-color:#6bdfa6}#mosaic-action-message{white-space:pre-wrap;font-size:13px;color:#e4f2f0}.mosaics-progress[hidden]{display:none!important}.mosaic-ndvi-panel{background:#0d2029;border:1px solid #35515c;border-radius:12px;padding:14px;margin-top:12px}.mosaic-ndvi-panel[hidden],#mosaic-band-selection[hidden]{display:none!important}.mosaic-ndvi-panel img{max-width:100%;height:auto;border-radius:8px}.mosaic-ndvi-panel select{width:100%;margin:5px 0 12px}.mosaic-ndvi-panel button{text-align:center}</style></head><body>
 <header><div class="logo">Agro<b>DT</b> / NDVI</div><span id="status">Conectando…</span></header><main><h1>Monitoramento de vegetação</h1><p>Fluxo simulado: drone → Raspberry Pi (servidor NDVI) → pasta analisadas/ → painel HTML. Atualização a cada 5 segundos.</p>
 <section class="pane import-panel">
   <button type="button" id="toggle-import" class="import-toggle" aria-expanded="false" aria-controls="import-body">
@@ -88,6 +88,19 @@
         <span id="mosaic-progress-label">0%</span>
       </div>
       <div class="mosaics-view" id="mosaic-view"><p>Sem ortomosaicos no momento.</p></div>
+      <div id="mosaic-ndvi-panel" class="mosaic-ndvi-panel" hidden>
+        <h3>NDVI do ortomosaico</h3>
+        <p id="mosaic-ndvi-status" class="mosaics-description"></p>
+        <div id="mosaic-ndvi-view"></div>
+        <div id="mosaic-band-selection" hidden>
+          <p class="mosaics-description">As bandas RED/NIR não foram identificadas automaticamente. Confirme os índices com os metadados do sensor antes de calcular.</p>
+          <label for="mosaic-red-band">Banda RED</label>
+          <select id="mosaic-red-band"></select>
+          <label for="mosaic-nir-band">Banda NIR</label>
+          <select id="mosaic-nir-band"></select>
+          <button type="button" id="mosaic-calc-ndvi">Calcular NDVI com essas bandas</button>
+        </div>
+      </div>
     </div>
   </div>
 </section>
@@ -111,13 +124,14 @@ $('flight').onchange=()=>{selected=null;showList()};$('refresh').onclick=update;
 
 let mosaicList=[],mosaicSources=[],selectedMosaic='',mosaicBusy=false;
 function mosaicStatusLabel(item){
- const labels={queued:'na fila',submitting:'enviando fotos',processing:'processando',downloading:'baixando mapa',generating_preview:'gerando prévia',completed:'concluído',failed:'erro'};
+ const labels={queued:'na fila',submitting:'enviando fotos',processing:'processando',downloading:'baixando mapa',generating_preview:'gerando prévia',calculating_ndvi:'calculando NDVI',completed:'concluído',failed:'erro'};
  return labels[item.status]||(item.has_preview?'pronto':item.has_orthophoto?'sem prévia':'tarefa registrada');
 }
 function showMosaic(){
  const chosen=mosaicList.find(m=>m.flight_id===selectedMosaic),view=$('mosaic-view'),meta=$('mosaic-metadata'),progress=$('mosaic-progress-container');
  view.replaceChildren();
- progress.hidden=!chosen||!['queued','submitting','processing','downloading','generating_preview'].includes(chosen.status);
+ progress.hidden=!chosen||!['queued','submitting','processing','downloading','generating_preview','calculating_ndvi'].includes(chosen.status);
+ $('mosaic-ndvi-panel').hidden=!chosen||!chosen.has_orthophoto;
  if(!chosen){meta.textContent='Ainda não há um voo com ortomosaico disponível.';view.append(el('p','Sem ortomosaicos no momento.'));return}
  const status=mosaicStatusLabel(chosen);
  meta.textContent='Voo: '+chosen.flight_id+' | Estado: '+status+' | '+(chosen.width?chosen.width+' × '+chosen.height+' px | ':'')+(chosen.bands?'Bandas: '+chosen.bands+' | ':'')+'CRS: '+(chosen.crs||'não informado');
@@ -125,7 +139,47 @@ function showMosaic(){
  if(chosen.has_preview){const img=el('img');img.alt='Prévia do ortomosaico do voo '+chosen.flight_id;img.src='/orthomosaics/'+encodeURIComponent(chosen.flight_id)+'/preview.png';img.onerror=()=>{view.replaceChildren(el('p','A prévia não pôde ser carregada. Consulte os logs do WebODM.'))};view.append(img)}
  else view.append(el('p',chosen.message||(chosen.has_orthophoto?'GeoTIFF pronto, mas a prévia ainda não foi gerada.':'Nenhum mapa gerado para este voo.')));
  if(chosen.preview_note)view.append(el('p',chosen.preview_note));
+ const ndviBox=$('mosaic-ndvi-view');ndviBox.replaceChildren();
+ const ndviStatus=$('mosaic-ndvi-status'),selectors=$('mosaic-band-selection');
+ if(chosen.has_ndvi){
+   const data=chosen.ndvi||{};
+   ndviStatus.textContent='NDVI médio: '+num(data.mean_ndvi)+' | RED: '+(data.red_band??'?')+' | NIR: '+(data.nir_band??'?')+' | Pixels válidos: '+(data.valid_pixels??'?');
+   const img=el('img');img.src='/orthomosaics/'+encodeURIComponent(chosen.flight_id)+'/ndvi_ortomosaico.png';
+   img.alt='Mapa de calor NDVI do ortomosaico '+chosen.flight_id;ndviBox.append(img);
+   selectors.hidden=true;
+ }else{
+   ndviStatus.textContent=chosen.ndvi_message||'NDVI ainda não disponível para este ortomosaico.';
+   selectors.hidden=!chosen.has_orthophoto;
+   if(!selectors.hidden)loadMosaicBands(chosen.flight_id);
+ }
 }
+let loadedBandFlight='',bandLoading=false;
+async function loadMosaicBands(flight){
+ if(bandLoading||loadedBandFlight===flight)return;
+ bandLoading=true;
+ try{
+   const response=await fetch('/api/v1/orthomosaics/bands/'+encodeURIComponent(flight));
+   if(!response.ok)throw Error('Não foi possível ler os metadados do GeoTIFF');
+   const bands=(await response.json()).bands||[];
+   for(const id of ['mosaic-red-band','mosaic-nir-band']){
+     const selection=$(id);selection.replaceChildren(new Option('Selecione a banda',''));
+     for(const b of bands)selection.append(new Option(b.index+' — '+(b.description||b.tags?.band_name||'sem identificação'),String(b.index)));
+   }
+   loadedBandFlight=flight;
+ }catch(e){$('mosaic-ndvi-status').textContent=e.message}finally{bandLoading=false}
+}
+$('mosaic-calc-ndvi').onclick=async()=>{
+ const flight=selectedMosaic,red=Number($('mosaic-red-band').value),nir=Number($('mosaic-nir-band').value);
+ const status=$('mosaic-ndvi-status'),btn=$('mosaic-calc-ndvi');
+ if(!red||!nir||red===nir){status.textContent='Selecione bandas RED e NIR diferentes.';return}
+ btn.disabled=true;status.textContent='Calculando NDVI georreferenciado...';
+ try{
+   await mosaicPost('/api/v1/orthomosaics/ndvi',{'Content-Type':'application/json'},
+     JSON.stringify({flight_id:flight,red_band:red,nir_band:nir}));
+   await updateMosaics();
+ }catch(e){status.textContent='Falha ao calcular NDVI: '+e.message}
+ finally{btn.disabled=false}
+};
 async function updateMosaics(){
  try{const [jobsResponse,sourcesResponse]=await Promise.all([fetch('/api/v1/orthomosaics',{cache:'no-store'}),fetch('/api/v1/orthomosaics/sources',{cache:'no-store'})]);
  if(!jobsResponse.ok||!sourcesResponse.ok)throw Error('Servidor HTTP '+jobsResponse.status+'/'+sourcesResponse.status);
