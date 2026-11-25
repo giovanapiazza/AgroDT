@@ -69,8 +69,23 @@ def save_state(root, flight_id, **data):
 
 
 def _images(folder):
-    from webodm_ortomosaico import collect_images
-    return collect_images(folder)
+    """Encontra imagens originais sem exigir requests/WebODM instalado no catalogo."""
+    base = Path(folder)
+    if not base.is_dir():
+        raise ValueError("Pasta do voo nao encontrada")
+    images = sorted(path for path in base.rglob("*")
+        if path.is_file() and path.suffix.lower() in EXT
+        and not path.name.startswith(".")
+        and not path.name.lower().startswith(("ndvi_", "heatmap_", "mascara_",
+                                             "mapa_areas_", "red_preview", "nir_preview"))
+        and not any(part.lower() in ("analisadas", "processadas", "erros", "__macosx")
+                    for part in path.relative_to(base).parts))
+    if not 2 <= len(images) <= MAX_IMAGES:
+        raise ValueError("O voo precisa conter entre 2 e 600 fotografias originais")
+    names = [path.name.casefold() for path in images]
+    if len(names) != len(set(names)):
+        raise ValueError("Fotos com nomes repetidos em subpastas; reorganize a pasta")
+    return images
 
 
 def list_sources(root, here):
