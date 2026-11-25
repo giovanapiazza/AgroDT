@@ -243,6 +243,8 @@ def start_job(root, here, flight_id, source="data", retry=False):
             raise ValueError("Este voo ja possui uma tarefa ativa; consulte o estado")
         if old and old.get("status") == "completed" and not retry:
             raise ValueError("Ortomosaico ja concluido para este voo")
+        if (output_dir(root, flight_id) / "orthophoto.tif").exists() and not retry:
+            raise ValueError("Este voo ja possui um ortomosaico; nao sera sobrescrito")
         paths = resolve_source(root, here, flight_id, source)
         save_state(root, flight_id, status="queued", progress=0,
                    message="Aguardando WebODM", project_id=None, task_id=None,
