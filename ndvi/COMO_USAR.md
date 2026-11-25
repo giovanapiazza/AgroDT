@@ -1,4 +1,15 @@
-# Como usar — AgroDT NDVI: 100 capturas
+# Como usar — AgroDT NDVI (importacao multiespectral e WebODM)
+
+## Funcionalidades atuais (branch main)
+
+- Receptor de capturas RED/NIR por HTTP e pela pasta `armazenamento/entrada/`.
+- Simulacao de envio automatico pelo drone (`simular_drone.py`).
+- Importacao de pares, ZIPs genericos e GeoTIFF/JP2 multibanda na interface.
+- Calculo NDVI, mapa de calor e areas de atencao por captura.
+- **Ortomosaicos WebODM integrados ao site**: escolha um voo de fotos originais da pasta `data/<voo>/` ou envie ZIP de fotos, clique em gerar, acompanhe status e visualize a previa quando concluida.
+- Processamento WebODM em segundo plano com historico de tarefa; fotos originais e GeoTIFF ficam preservados.
+
+Veja o procedimento detalhado em [WEBODM_COMO_USAR.md](WEBODM_COMO_USAR.md). O WebODM precisa estar instalado e configurado no computador que executa a API AgroDT. O processamento de NDVI **sobre o ortomosaico completo** nao e automatico ainda.
 
 Fluxo: **drone simulado → API HTTP → processamento NDVI (PC ou Raspberry Pi) → pasta `armazenamento/analisadas/` → painel HTML**.
 
