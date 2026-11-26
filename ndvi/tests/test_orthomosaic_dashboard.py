@@ -27,7 +27,13 @@ class DashboardTests(unittest.TestCase):
         self.webodm.collect_images = lambda folder: sorted(Path(folder).rglob("*.JPG")) or sorted(Path(folder).rglob("*.TIF"))
         self.webodm.authenticate = lambda *args: "token"
         self.webodm.project = lambda *args: 11
-        self.webodm.create_task = lambda *args: 22
+        # O integrador envia o perfil de memoria como argumento nomeado.
+        # O mock deve acompanhar a assinatura real de create_task().
+        self.received_profiles = []
+        def create_task_mock(*args, **kwargs):
+            self.received_profiles.append(kwargs.get("profile"))
+            return 22
+        self.webodm.create_task = create_task_mock
         self.webodm.task_status = lambda *args: {"status": 40}
         def download(*args):
             out = Path(args[-1])
@@ -63,6 +69,7 @@ class DashboardTests(unittest.TestCase):
         self.assertEqual(result["status"], "completed")
         self.assertEqual(result["progress"], 100)
         self.assertEqual(result["task_id"], 22)
+        self.assertEqual(self.received_profiles, ["low_memory"])
         self.assertEqual(result["bands"], 4)
         self.assertTrue((self.root / "ortomosaicos" / "voo_01" / "preview.png").exists())
         with self.assertRaises(ValueError):
