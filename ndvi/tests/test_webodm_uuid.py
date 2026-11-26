@@ -21,9 +21,11 @@ class WebODMIDTests(unittest.TestCase):
         with patch.object(webodm, "api_request", return_value={"id": self.UUID}):
             from tempfile import TemporaryDirectory
             with TemporaryDirectory() as directory:
-                image = Path(directory) / "IMG_01_RED.TIF"
-                image.write_bytes(b"original")
-                task_id = webodm.create_task("token", "http://localhost:8000", 11, [image], "teste")
+                red = Path(directory) / "IMG_01_RED.TIF"
+                nir = Path(directory) / "IMG_01_NIR.TIF"
+                red.write_bytes(b"original RED")
+                nir.write_bytes(b"original NIR")
+                task_id = webodm.create_task("token", "http://localhost:8000", 11, [red, nir], "teste")
                 self.assertEqual(task_id, self.UUID)
                 self.assertIsInstance(task_id, str)
 
