@@ -24,6 +24,7 @@ import numpy as np
 from PIL import Image, ImageDraw
 from image_importer import find_pairs, read_zip, extract_single_band, make_tiff
 from orthomosaic_catalog import list_mosaics
+from limpar_historico import archive_storage
 from orthomosaic_dashboard import (list_sources as list_orthomosaic_sources,
     import_zip as import_flight_zip, start_job as start_orthomosaic_job,
     resume_jobs as resume_orthomosaic_jobs, read_state as read_orthomosaic_state,
@@ -644,12 +645,17 @@ def main():
     args = parser.parse_args()
     if not API_KEY:
         parser.error("Defina AGRODT_API_KEY antes de iniciar o receptor")
-    init_db()
-    resume_orthomosaic_jobs(ROOT)
-    threading.Thread(target=watch_folder, daemon=True).start()
+    # Reserva a porta primeiro: se ja houver outro app.py, nao altera os dados.
     server = ThreadingHTTPServer((args.host, args.port), Handler)
-    print(f"AgroDT NDVI: http://{args.host}:{args.port}  |  armazenamento: {ROOT}", flush=True)
     try:
+        # Cada nova execucao e uma sessao vazia. O historico anterior e arquivado,
+        # nunca apagado; tarefas antigas do WebODM nao sao retomadas nesta sessao.
+        backup = archive_storage(ROOT)
+        if backup:
+            print(f"Sessao anterior arquivada em: {backup}", flush=True)
+        init_db()
+        threading.Thread(target=watch_folder, daemon=True).start()
+        print(f"AgroDT NDVI (sessao vazia): http://{args.host}:{args.port}  |  armazenamento: {ROOT}", flush=True)
         server.serve_forever()
     except KeyboardInterrupt:
         pass
