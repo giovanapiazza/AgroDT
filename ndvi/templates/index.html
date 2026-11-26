@@ -73,6 +73,12 @@
       <p class="mosaics-description" id="mosaic-connection-status">As credenciais WebODM devem estar no terminal que iniciou app.py. A chave acima é apenas do AgroDT.</p>
       <label for="mosaic-source">Voo existente (fotos originais)</label>
       <select id="mosaic-source"><option value="">Carregando voos...</option></select>
+      <label for="mosaic-profile">Perfil de processamento WebODM</label>
+      <select id="mosaic-profile">
+        <option value="low_memory" selected>Econômico (menos memória, recomendado)</option>
+        <option value="standard">Padrão (exige mais memória)</option>
+      </select>
+      <p class="mosaics-description">Econômico: 1 processo simultâneo, qualidade baixa da nuvem de pontos e sem modelo 3D completo. Mantém a geração do ortomosaico.</p>
       <button id="mosaic-start" type="button">Gerar ortomosaico do voo</button>
       <div class="mosaics-divider">ou enviar fotos originais em ZIP</div>
       <label for="mosaic-zip-name">Identificador do novo voo</label>
@@ -236,7 +242,7 @@ async function mosaicPost(url,headers,body){
  return data;
 }
 async function mosaicStart(flight,source){
- const result=await mosaicPost('/api/v1/orthomosaics/start',{'Content-Type':'application/json'},JSON.stringify({flight_id:flight,source}));
+ const result=await mosaicPost('/api/v1/orthomosaics/start',{'Content-Type':'application/json'},JSON.stringify({flight_id:flight,source,profile:$('mosaic-profile').value}));
  selectedMosaic=flight;
  return result;
 }
