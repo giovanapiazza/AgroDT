@@ -207,9 +207,13 @@ def _worker(root, flight_id, image_paths=None):
         from orthomosaic_catalog import build_preview
         from webodm_ortomosaico import (authenticate, project, create_task,
                                         task_status, download_orthophoto)
-        check_webodm_connection()
         address, username, password = _credentials()
-        token = authenticate(address, username, password)
+        try:
+            token = authenticate(address, username, password)
+        except Exception as exc:
+            if "HTTP 400" in str(exc) or "HTTP 401" in str(exc):
+                raise ValueError("Login WebODM recusado: WEBODM_USER e WEBODM_PASSWORD pertencem ao processo app.py; confira e reinicie o servidor.") from exc
+            raise
         state = read_state(root, flight_id) or {}
         pid, tid = state.get("project_id"), state.get("task_id")
         if not pid or not tid:
