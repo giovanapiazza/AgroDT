@@ -111,8 +111,13 @@ def project(token, base, name, project_id=None):
     return parse_webodm_id(response["id"], "projeto")
 
 
-def create_task(token, base, project_id, images, name):
-    # ExitStack mantém os arquivos abertos até o fim do envio multipart.
+# Django limita por padrao a 100 arquivos multipart por requisicao.
+# Lotes menores protegem o servidor e evitam HTTP 400 em voos multiespectrais.
+MAX_IMAGES_PER_REQUEST = 24
+
+
+def _post_images(token, base, endpoint, images, data=None):
+    """Transmite um lote sem alterar os bytes nem os metadados das fotos."""
     with ExitStack() as stack:
         files = []
         for path in images:
@@ -120,9 +125,42 @@ def create_task(token, base, project_id, images, name):
             mime = "image/jpeg" if path.suffix.lower() in {".jpg", ".jpeg"} else (
                 "image/png" if path.suffix.lower() == ".png" else "image/tiff")
             files.append(("images", (path.name, stream, mime)))
-        response = api_request("POST", base, f"/api/projects/{project_id}/tasks/",
-                               token, files=files, data={"name": name, "options": "[]"})
-    return parse_webodm_id(response["id"], "tarefa")
+        return api_request("POST", base, endpoint, token, files=files, data=data or {})
+
+
+def create_task(token, base, project_id, images, name):
+    """Cria UMA tarefa para o voo inteiro; usa lotes para missões grandes.
+
+    A tarefa parcial evita processamento prematuro. 'commit' so e enviado
+    depois que todas as fotografias tiverem sido aceitas pelo WebODM.
+    """
+    if len(images) < 2:
+        raise ValueError("Uma tarefa WebODM exige pelo menos duas imagens")
+    endpoint = f"/api/projects/{project_id}/tasks/"
+
+    # Mantem compatibilidade com o fluxo testado de voos pequenos.
+    if len(images) <= MAX_IMAGES_PER_REQUEST:
+        response = _post_images(token, base, endpoint, images,
+                                {"name": name, "options": "[]"})
+        return parse_webodm_id(response["id"], "tarefa")
+
+    response = api_request("POST", base, endpoint, token,
+                           data={"name": name, "options": "[]", "partial": "true"})
+    task_id = parse_webodm_id(response["id"], "tarefa")
+    task_endpoint = f"/api/projects/{project_id}/tasks/{task_id}"
+    try:
+        for offset in range(0, len(images), MAX_IMAGES_PER_REQUEST):
+            batch = images[offset:offset + MAX_IMAGES_PER_REQUEST]
+            _post_images(token, base, task_endpoint + "/upload/", batch)
+        # A tarefa so inicia com todas as bandas carregadas.
+        api_request("POST", base, task_endpoint + "/commit/", token)
+    except Exception as exc:
+        raise WebODMError(
+            f"Envio incompleto da tarefa parcial WebODM {task_id} "
+            f"(projeto {project_id}): {exc}. "
+            "Confira o painel WebODM antes de tentar novamente."
+        ) from exc
+    return task_id
 
 
 def task_status(token, base, project_id, task_id):
