@@ -116,6 +116,20 @@ def project(token, base, name, project_id=None):
 MAX_IMAGES_PER_REQUEST = 24
 
 
+def processing_options(profile="low_memory"):
+    """Opções conservadoras para teste manual de ortomosaicos em notebooks."""
+    if profile == "standard":
+        return "[]"
+    if profile != "low_memory":
+        raise ValueError("Perfil WebODM invalido: use low_memory ou standard")
+    return json.dumps([
+        {"name": "max-concurrency", "value": 1},
+        {"name": "pc-quality", "value": "low"},
+        {"name": "skip-3dmodel", "value": True},
+    ])
+
+
+
 def _post_images(token, base, endpoint, images, data=None):
     """Transmite um lote sem alterar os bytes nem os metadados das fotos."""
     with ExitStack() as stack:
@@ -128,7 +142,7 @@ def _post_images(token, base, endpoint, images, data=None):
         return api_request("POST", base, endpoint, token, files=files, data=data or {})
 
 
-def create_task(token, base, project_id, images, name):
+def create_task(token, base, project_id, images, name, profile="low_memory"):
     """Cria UMA tarefa para o voo inteiro; usa lotes para missões grandes.
 
     A tarefa parcial evita processamento prematuro. 'commit' so e enviado
@@ -136,16 +150,17 @@ def create_task(token, base, project_id, images, name):
     """
     if len(images) < 2:
         raise ValueError("Uma tarefa WebODM exige pelo menos duas imagens")
+    options = processing_options(profile)
     endpoint = f"/api/projects/{project_id}/tasks/"
 
     # Mantem compatibilidade com o fluxo testado de voos pequenos.
     if len(images) <= MAX_IMAGES_PER_REQUEST:
         response = _post_images(token, base, endpoint, images,
-                                {"name": name, "options": "[]"})
+                                {"name": name, "options": options})
         return parse_webodm_id(response["id"], "tarefa")
 
     response = api_request("POST", base, endpoint, token,
-                           data={"name": name, "options": "[]", "partial": "true"})
+                           data={"name": name, "options": options, "partial": "true"})
     task_id = parse_webodm_id(response["id"], "tarefa")
     task_endpoint = f"/api/projects/{project_id}/tasks/{task_id}"
     try:
