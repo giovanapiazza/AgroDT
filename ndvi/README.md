@@ -49,6 +49,12 @@ python app.py
 
 Acesse http://127.0.0.1:8765 (Ctrl+Shift+R). A senha do WebODM permanece no backend; a interface pede somente a chave local da API AgroDT.
 
+## Sessão sempre vazia ao iniciar
+
+Toda vez que você executa `python app.py`, o AgroDT inicia **sem capturas, sem resultados e sem ortomosaicos anteriores no painel**. Antes disso, o diretório `armazenamento/` da sessão anterior é movido automaticamente para `armazenamento_backup_<data>_<id>/`. O banco SQLite, as imagens originais enviadas e os mapas anteriores ficam nesse backup. Os arquivos em `ndvi/data/` não são removidos.
+
+Esta limpeza acontece **somente na inicialização do processo**, não ao atualizar a página no navegador. Se existir um segundo `app.py` ativo na mesma porta, a nova instância não deve mover os dados da primeira. O servidor WebODM e as tarefas remotas existentes não são apagados: apenas deixam de aparecer na nova sessão AgroDT. Backups ocupam espaço em disco e devem ser gerenciados manualmente.
+
 ## Como testar
 
 - **Recepção do drone:** em outro terminal `export AGRODT_API_KEY='agrodt-teste-123'` e execute `python simular_drone.py --quantidade 20 --intervalo 1 --flight-id teste_01`. Esses dados são sintéticos.
