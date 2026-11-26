@@ -82,6 +82,37 @@ class DashboardTests(unittest.TestCase):
         dashboard.start_job(self.root, self.here, "voo_02", source="upload")
         self.assertEqual(self._wait("voo_02")["status"], "completed")
 
+    def test_ignore_dataset_preview_but_keep_all_multispectral_bands(self):
+        """Bürgewald: 144 TIFFs + duas imagens de preview não são 146 fotos."""
+        flight = self.here / "data" / "voo_buergewald"
+        images = flight / "images"
+        previews = flight / "preview"
+        images.mkdir(parents=True)
+        previews.mkdir()
+        for capture in range(24):
+            for band in range(1, 7):
+                (images / f"IMG_{capture:04}_{band}.tif").write_bytes(b"original")
+        (previews / "3d-preview.png").write_bytes(b"visualizacao")
+        (previews / "orthophoto_small.jpg").write_bytes(b"visualizacao")
+        self.assertEqual(len(dashboard.resolve_source(
+            self.root, self.here, "voo_buergewald", "data")), 144)
+        sources = dashboard.list_sources(self.root, self.here)
+        self.assertIn({"flight_id": "voo_buergewald",
+                       "source": "data", "images_count": 144}, sources)
+
+    def test_zip_ignores_previews_and_keeps_raw_images(self):
+        pack = Path(self.tmp.name) / "buergewald.zip"
+        with zipfile.ZipFile(pack, "w") as archive:
+            archive.writestr("images/capture_1_RED.tif", b"red")
+            archive.writestr("images/capture_1_NIR.tif", b"nir")
+            archive.writestr("preview/3d-preview.png", b"preview")
+            archive.writestr("preview/orthophoto_small.jpg", b"preview")
+        imported = dashboard.import_zip(pack, self.root, "voo_preview")
+        self.assertEqual(imported["images_count"], 2)
+        self.assertEqual(sorted(p.name for p in (
+            self.root / "voos_originais" / "voo_preview").iterdir()),
+            ["capture_1_NIR.tif", "capture_1_RED.tif"])
+
     def test_zip_traversal_and_duplicate_rejected(self):
         pack = Path(self.tmp.name) / "bad.zip"
         with zipfile.ZipFile(pack, "w") as archive:
