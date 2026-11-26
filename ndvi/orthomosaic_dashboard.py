@@ -13,6 +13,17 @@ import zipfile
 
 SAFE = re.compile(r"^[A-Za-z0-9_-]{1,64}$")
 EXT = {".jpg", ".jpeg", ".tif", ".tiff", ".png"}
+# Artefatos visuais dos datasets não pertencem ao conjunto de capturas do drone.
+NON_CAPTURE_DIRS = {"preview", "previews", "analisadas", "processadas", "erros", "__macosx", "orthomosaicos"}
+NON_CAPTURE_FILES = {"3d-preview.png", "orthophoto_small.jpg"}
+
+
+def is_capture_path(value):
+    """Exclui prévias, preservando as fotos multiespectrais originais."""
+    parts = str(value).replace("\\", "/").split("/")
+    return (not any(part.casefold() in NON_CAPTURE_DIRS for part in parts[:-1])
+            and parts[-1].casefold() not in NON_CAPTURE_FILES)
+
 MAX_IMAGES = 600
 MAX_MEMBER = 80 * 1024 * 1024
 MAX_UNCOMPRESSED = 1400 * 1024 * 1024
@@ -78,8 +89,7 @@ def _images(folder):
         and not path.name.startswith(".")
         and not path.name.lower().startswith(("ndvi_", "heatmap_", "mascara_",
                                              "mapa_areas_", "red_preview", "nir_preview"))
-        and not any(part.lower() in ("analisadas", "processadas", "erros", "__macosx")
-                    for part in path.relative_to(base).parts))
+        and is_capture_path(path.relative_to(base)))
     if not 2 <= len(images) <= MAX_IMAGES:
         raise ValueError("O voo precisa conter entre 2 e 600 fotografias originais")
     names = [path.name.casefold() for path in images]
@@ -131,7 +141,8 @@ def import_zip(upload_path, root, flight_id):
     try:
         with zipfile.ZipFile(upload_path) as archive:
             members = [x for x in archive.infolist()
-                       if not x.is_dir() and Path(x.filename).suffix.lower() in EXT]
+                       if not x.is_dir() and Path(x.filename).suffix.lower() in EXT
+                       and is_capture_path(x.filename)]
             if len(members) < 2 or len(members) > MAX_IMAGES:
                 raise ValueError("O ZIP deve conter de 2 a 600 fotos originais")
             if sum(x.file_size for x in members) > MAX_UNCOMPRESSED:
