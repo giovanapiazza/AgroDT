@@ -555,7 +555,11 @@ class Handler(BaseHTTPRequestHandler):
                 source = command.get("source", "data")
                 if source not in ("data", "upload"):
                     raise ValueError("Origem invalida")
-                state = start_orthomosaic_job(ROOT, HERE, flight, source=source)
+                profile = command.get("profile", "low_memory")
+                if profile not in ("low_memory", "standard"):
+                    raise ValueError("Perfil WebODM invalido")
+                state = start_orthomosaic_job(ROOT, HERE, flight, source=source,
+                                              profile=profile)
                 return self.json_response(202, {"job": state})
             if route == "/api/v1/orthomosaics/upload":
                 if size <= 0 or size > MAX_FLIGHT_ZIP:
