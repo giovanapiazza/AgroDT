@@ -55,6 +55,24 @@ class BatchUploadTests(unittest.TestCase):
                                   self.images, "voo_teste")
         self.assertFalse(any(url.endswith("/commit/") for url in calls))
 
+    def test_economic_profile_has_low_memory_parameters(self):
+        import json
+        opts = {item["name"]: item["value"] for item in
+                json.loads(webodm.processing_options("low_memory"))}
+        self.assertEqual(opts["max-concurrency"], 1)
+        self.assertEqual(opts["pc-quality"], "low")
+        self.assertIs(opts["skip-3dmodel"], True)
+        self.assertEqual(webodm.processing_options("standard"), "[]")
+        with self.assertRaises(ValueError):
+            webodm.processing_options("invalid")
+
+    def test_selected_standard_profile_sent_to_task(self):
+        with patch.object(webodm, "api_request",
+                          return_value={"id": 42}) as request:
+            webodm.create_task("token", "http://localhost:8000", 5,
+                               self.images[:2], "voo_teste", profile="standard")
+        self.assertEqual(request.call_args.kwargs["data"]["options"], "[]")
+
     def test_small_mission_keeps_single_request(self):
         with patch.object(webodm, "api_request",
                           return_value={"id": 42}) as req:
