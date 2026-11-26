@@ -2,8 +2,8 @@
 """Integra fotos originais de um voo AgroDT ao WebODM via API documentada.
 
 Uso: python webodm_ortomosaico.py submit --imagens /caminho/voo --nome voo_01
-     python webodm_ortomosaico.py status --projeto-id 1 --tarefa-id 2
-     python webodm_ortomosaico.py download --projeto-id 1 --tarefa-id 2 --nome voo_01
+     python webodm_ortomosaico.py status --projeto-id 1 --tarefa-id <ID-ou-UUID>
+     python webodm_ortomosaico.py download --projeto-id 1 --tarefa-id <ID-ou-UUID> --nome voo_01
 
 Requer servidor WebODM e no de processamento ativos. NAO cria mosaico de imagens
 NDVI isoladas: use imagens originais JPG/TIFF sobrepostas do mesmo levantamento.
@@ -17,6 +17,7 @@ import os
 from pathlib import Path
 import re
 import sys
+import uuid
 
 try:
     import requests
@@ -87,11 +88,27 @@ def authenticate(base, username, password):
     return token
 
 
+def parse_webodm_id(value, label):
+    """Identificadores API WebODM: projetos costumam ser ints, tarefas podem ser UUIDs.
+
+    Valida antes de interpolar o ID em um caminho HTTP; nunca converte UUID em int.
+    """
+    if isinstance(value, bool) or value is None:
+        raise WebODMError(f"Identificador {label} ausente ou invalido")
+    candidate = str(value).strip()
+    if candidate.isdecimal() and int(candidate) > 0:
+        return int(candidate)
+    try:
+        return str(uuid.UUID(candidate))
+    except (ValueError, AttributeError):
+        raise WebODMError(f"Identificador {label} nao suportado: {candidate[:80]}") from None
+
+
 def project(token, base, name, project_id=None):
     if project_id is not None:
-        return int(project_id)
+        return parse_webodm_id(project_id, "projeto")
     response = api_request("POST", base, "/api/projects/", token, data={"name": name})
-    return int(response["id"])
+    return parse_webodm_id(response["id"], "projeto")
 
 
 def create_task(token, base, project_id, images, name):
@@ -105,7 +122,7 @@ def create_task(token, base, project_id, images, name):
             files.append(("images", (path.name, stream, mime)))
         response = api_request("POST", base, f"/api/projects/{project_id}/tasks/",
                                token, files=files, data={"name": name, "options": "[]"})
-    return int(response["id"])
+    return parse_webodm_id(response["id"], "tarefa")
 
 
 def task_status(token, base, project_id, task_id):
@@ -189,11 +206,11 @@ def main(argv=None):
     submit = sub.add_parser("submit", help="Envia fotos originais do voo para WebODM")
     submit.add_argument("--imagens", required=True, type=Path)
     submit.add_argument("--nome", required=True)
-    submit.add_argument("--projeto-id", type=int)
+    submit.add_argument("--projeto-id", type=lambda v: parse_webodm_id(v, "projeto"))
     for command in ("status", "download"):
         p = sub.add_parser(command)
-        p.add_argument("--projeto-id", type=int, required=True)
-        p.add_argument("--tarefa-id", type=int, required=True)
+        p.add_argument("--projeto-id", type=lambda v: parse_webodm_id(v, "projeto"), required=True)
+        p.add_argument("--tarefa-id", type=lambda v: parse_webodm_id(v, "tarefa"), required=True)
         if command == "download":
             p.add_argument("--nome", required=True)
     args = parser.parse_args(argv)
