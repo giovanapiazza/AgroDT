@@ -170,6 +170,27 @@ def _credentials():
     return address, username, password
 
 
+def check_webodm_connection():
+    """Testa as credenciais do PROCESSO app.py, sem expor senha ou token ao navegador."""
+    from webodm_ortomosaico import authenticate, WebODMError
+    address, username, password = _credentials()
+    try:
+        authenticate(address, username, password)
+    except WebODMError as exc:
+        if "HTTP 400" in str(exc) or "HTTP 401" in str(exc):
+            raise ValueError(
+                "O WebODM recusou WEBODM_USER/WEBODM_PASSWORD do processo app.py. "
+                "A chave API do AgroDT é diferente. Configure o usuário e a senha "
+                "reais no mesmo terminal e reinicie app.py."
+            ) from exc
+        raise ValueError("Falha na API WebODM. Confira a URL e o servidor em execução.") from exc
+    except Exception as exc:
+        raise ValueError(
+            "Não foi possível conectar ao WebODM. Verifique se a porta 8000 está ativa."
+        ) from exc
+    return {"status": "connected", "message": "Autenticação com WebODM confirmada"}
+
+
 def _webodm_progress(task):
     for field in ("running_progress", "resize_progress", "upload_progress"):
         try:
@@ -186,6 +207,7 @@ def _worker(root, flight_id, image_paths=None):
         from orthomosaic_catalog import build_preview
         from webodm_ortomosaico import (authenticate, project, create_task,
                                         task_status, download_orthophoto)
+        check_webodm_connection()
         address, username, password = _credentials()
         token = authenticate(address, username, password)
         state = read_state(root, flight_id) or {}
