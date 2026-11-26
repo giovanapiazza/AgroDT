@@ -233,7 +233,8 @@ def _worker(root, flight_id, image_paths=None):
             save_state(root, flight_id, status="submitting",
                        message="Enviando fotos originais ao WebODM")
             pid = project(token, address, flight_id)
-            tid = create_task(token, address, pid, image_paths, flight_id)
+            tid = create_task(token, address, pid, image_paths, flight_id,
+                              profile=state.get("profile", "low_memory"))
             save_state(root, flight_id, project_id=pid, task_id=tid,
                        status="processing", message="Tarefa criada; acompanhando WebODM")
         while True:
@@ -307,7 +308,9 @@ def calculate_existing_ndvi(root, flight_id, red_index, nir_index):
         raise
 
 
-def start_job(root, here, flight_id, source="data", retry=False):
+def start_job(root, here, flight_id, source="data", retry=False, profile="low_memory"):
+    if profile not in ("low_memory", "standard"):
+        raise ValueError("Perfil WebODM invalido")
     validated_flight(flight_id)
     with _lock:
         active_thread = _workers.get(flight_id)
@@ -323,7 +326,7 @@ def start_job(root, here, flight_id, source="data", retry=False):
         paths = resolve_source(root, here, flight_id, source)
         save_state(root, flight_id, status="queued", progress=0,
                    message="Aguardando WebODM", project_id=None, task_id=None,
-                   images_count=len(paths), source=source)
+                   images_count=len(paths), source=source, profile=profile)
         worker = threading.Thread(target=_worker, args=(root, flight_id, paths),
                                   daemon=True, name="webodm-" + flight_id)
         _workers[flight_id] = worker
