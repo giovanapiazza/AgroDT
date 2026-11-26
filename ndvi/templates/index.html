@@ -27,6 +27,8 @@
         <option value="sentinel2">Sentinel-2 (B04/B08)</option>
         <option value="micasense_rededge">MicaSense RedEdge-M (índices 3/5)</option>
       </select>
+      <label for="zip-flight-id">Identificador do voo (mesmo para NDVI e ortomosaico)</label>
+      <input id="zip-flight-id" type="text" value="voo_sequoia_01" maxlength="64" pattern="[A-Za-z0-9_-]+" placeholder="ex.: voo_milho_01">
       <label for="zip-file">Arquivo ZIP</label>
       <input type="file" id="zip-file" accept=".zip,application/zip" aria-label="Selecionar ZIP da Sequoia">
       <button id="upload-zip" type="button">Importar e analisar ZIP</button>
@@ -57,6 +59,7 @@
   </div>
 </section>
 <label for="flight">Voo: </label><select id="flight"><option value="">Todos</option></select> <button style="width:auto" id="refresh">Atualizar</button>
+<button id="mosaic-use-current" type="button" style="width:auto">Gerar ortomosaico deste mesmo voo</button>
 <div class="cards" style="margin-top:18px"><div class="card">Analisadas<strong id="count">—</strong></div><div class="card">NDVI médio<strong id="mean">—</strong></div><div class="card">Com alertas<strong id="alerts">—</strong></div><div class="card">Erros<strong id="errors">—</strong></div></div>
 <div class="layout"><section class="pane"><h2>Capturas</h2><div class="scroll" id="list">Aguardando…</div></section><section class="pane"><h2 id="title">Selecione uma captura</h2><div id="detail" class="muted">Envie imagens para começar.</div></section></div>
 <section class="pane mosaics-section" aria-labelledby="mosaics-heading">
@@ -66,6 +69,8 @@
     <div class="mosaics-controls">
       <label for="mosaic-api-key">Chave API do AgroDT</label>
       <input id="mosaic-api-key" type="password" autocomplete="off" placeholder="Mesma AGRODT_API_KEY do servidor">
+      <button id="mosaic-check-connection" type="button">Verificar conexão WebODM</button>
+      <p class="mosaics-description" id="mosaic-connection-status">As credenciais WebODM devem estar no terminal que iniciou app.py. A chave acima é apenas do AgroDT.</p>
       <label for="mosaic-source">Voo existente (fotos originais)</label>
       <select id="mosaic-source"><option value="">Carregando voos...</option></select>
       <button id="mosaic-start" type="button">Gerar ortomosaico do voo</button>
@@ -117,12 +122,36 @@ async function update(){try{const r=await fetch('/api/v1/captures');if(!r.ok)thr
 $('toggle-import').onclick=()=>{const body=$('import-body');const opening=body.hidden;body.hidden=!opening;$('toggle-import').setAttribute('aria-expanded',String(opening));$('import-chevron').textContent=opening?'▴':'▾'};
 function setImportMode(mode){for(const type of ['zip','pair','multi']){const active=mode===type;$('panel-'+type).hidden=!active;$('mode-'+type).classList.toggle('selected',active);$('mode-'+type).setAttribute('aria-pressed',String(active))}}
 $('mode-zip').onclick=()=>setImportMode('zip');$('mode-pair').onclick=()=>setImportMode('pair');$('mode-multi').onclick=()=>setImportMode('multi');
-$('upload-zip').onclick=async()=>{const file=$('zip-file').files[0],msg=$('upload-message'),btn=$('upload-zip');if(!file){msg.textContent='Selecione um ZIP primeiro.';return}if(!$('upload-key').value){msg.textContent='Informe a chave API usada pelo servidor.';return}if(file.size>128*1024*1024){msg.textContent='Arquivo acima de 128 MiB.';return}btn.disabled=true;msg.textContent='Enviando e processando imagens...';try{const r=await fetch('/api/v1/import-zip',{method:'POST',headers:{'Content-Type':'application/zip','X-Flight-ID':'sequoia_'+Date.now(),'X-API-Key':$('upload-key').value,'X-Sensor-Profile':$('sensor-profile').value},body:file});const result=await r.json();if(!r.ok)throw Error(result.error||(result.errors||[]).map(x=>x.source+': '+x.error).join('; ')||('HTTP '+r.status));msg.textContent='Capturas analisadas: '+result.processed+' | Falhas: '+result.failed+(result.errors?.length?'\\n'+result.errors.map(e=>e.source+': '+e.error).join('\\n'):'')+(result.warnings?.length?'\\nAvisos: '+result.warnings.join('; '):'');await update()}catch(e){msg.textContent='Falha ao importar: '+e.message}finally{btn.disabled=false}};
+$('upload-zip').onclick=async()=>{const file=$('zip-file').files[0],msg=$('upload-message'),btn=$('upload-zip'),flight=$('zip-flight-id').value.trim();if(!/^[A-Za-z0-9_-]{1,64}$/.test(flight)){msg.textContent='Informe um ID de voo com letras, números, _ ou -.';return}if(!file){msg.textContent='Selecione um ZIP primeiro.';return}if(!$('upload-key').value){msg.textContent='Informe a chave API usada pelo servidor.';return}if(file.size>128*1024*1024){msg.textContent='Arquivo acima de 128 MiB.';return}btn.disabled=true;msg.textContent='Enviando e processando imagens...';try{const r=await fetch('/api/v1/import-zip',{method:'POST',headers:{'Content-Type':'application/zip','X-Flight-ID':flight,'X-API-Key':$('upload-key').value,'X-Sensor-Profile':$('sensor-profile').value},body:file});const result=await r.json();if(!r.ok)throw Error(result.error||(result.errors||[]).map(x=>x.source+': '+x.error).join('; ')||('HTTP '+r.status));msg.textContent='Voo '+flight+' | Capturas analisadas: '+result.processed+' | Falhas: '+result.failed+(result.errors?.length?'\\n'+result.errors.map(e=>e.source+': '+e.error).join('\\n'):'')+(result.warnings?.length?'\\nAvisos: '+result.warnings.join('; '):'')+(result.originals_saved?'\\nFotos originais preservadas para WebODM.':'\\nVerifique se as fotos originais estão disponíveis para WebODM.');await update();$('flight').value=flight;selected=null;showList();await updateMosaics();syncMosaicFlight(true)}catch(e){msg.textContent='Falha ao importar: '+e.message}finally{btn.disabled=false}};
 $('upload-pair').onclick=async()=>{const red=$('red-file').files[0],nir=$('nir-file').files[0],msg=$('pair-message'),btn=$('upload-pair');if(!red||!nir){msg.textContent='Selecione RED e NIR.';return}if(!$('upload-key').value){msg.textContent='Informe a chave API usada pelo servidor.';return}const payload=new FormData();payload.append('red',red);payload.append('nir',nir);payload.append('flight_id','upload_web');payload.append('capture_id','web_'+Date.now());btn.disabled=true;msg.textContent='Enviando e processando par...';try{const r=await fetch('/api/v1/captures',{method:'POST',headers:{'X-API-Key':$('upload-key').value},body:payload});const data=await r.json();if(!r.ok)throw Error(data.error||('HTTP '+r.status));msg.textContent='Captura analisada: '+data.capture_id+' | NDVI '+num(data.mean_ndvi);await update()}catch(e){msg.textContent='Falha: '+e.message}finally{btn.disabled=false}};
 $('upload-multi').onclick=async()=>{const file=$('multiband-file').files[0],msg=$('multi-message'),btn=$('upload-multi');if(!file){msg.textContent='Selecione um GeoTIFF ou JP2.';return}if(!$('upload-key').value){msg.textContent='Informe a chave API do servidor.';return}const red=Number($('red-band-index').value),nir=Number($('nir-band-index').value);if(!Number.isInteger(red)||!Number.isInteger(nir)||red<1||nir<1||red===nir){msg.textContent='Informe indices validos e diferentes para RED e NIR.';return}if(file.size>60*1024*1024){msg.textContent='Arquivo acima de 60 MiB.';return}btn.disabled=true;msg.textContent='Extraindo bandas e calculando NDVI...';try{const extension=file.name.slice(file.name.lastIndexOf('.')).toLowerCase();const r=await fetch('/api/v1/import-multiband',{method:'POST',headers:{'Content-Type':'application/octet-stream','X-API-Key':$('upload-key').value,'X-Flight-ID':'multibanda_'+Date.now(),'X-File-Extension':extension,'X-Red-Band':String(red),'X-Nir-Band':String(nir)},body:file});const data=await r.json();if(!r.ok)throw Error(data.error||('HTTP '+r.status));msg.textContent='Captura analisada: '+data.capture_id+' | NDVI '+num(data.mean_ndvi);await update()}catch(e){msg.textContent='Falha: '+e.message}finally{btn.disabled=false}};
-$('flight').onchange=()=>{selected=null;showList()};$('refresh').onclick=update;update();setInterval(update,5000);
+$('flight').onchange=()=>{selected=null;showList();syncMosaicFlight(false)};$('refresh').onclick=update;update();setInterval(update,5000);
 
 let mosaicList=[],mosaicSources=[],selectedMosaic='',mosaicBusy=false;
+function syncMosaicFlight(scroll){
+ const flight=$('flight').value;
+ if(scroll)document.querySelector('.mosaics-section')?.scrollIntoView({behavior:'smooth',block:'start'});
+ if(!flight){if(scroll)$('mosaic-action-message').textContent='Escolha primeiro um voo no filtro das capturas individuais.';return}
+ $('mosaic-zip-name').value=flight;
+ const source=mosaicSources.find(item=>item.flight_id===flight);
+ if(source){
+   $('mosaic-source').value=source.source+':'+source.flight_id;
+   if(scroll)$('mosaic-action-message').textContent='Voo '+flight+' vinculado: serão usadas as mesmas fotografias originais para o ortomosaico.';
+ }else{
+   if(scroll)$('mosaic-action-message').textContent='Voo '+flight+' já aparece no NDVI individual, mas não há fotos originais preservadas para fotogrametria. Envie o ZIP ORIGINAL na seção abaixo com o mesmo ID '+flight+'; as análises existentes serão mantidas.';
+ }
+}
+$('mosaic-use-current').onclick=()=>syncMosaicFlight(true);
+$('mosaic-check-connection').onclick=async()=>{
+ const status=$('mosaic-connection-status');
+ status.textContent='Verificando autenticação com WebODM...';
+ try{
+   const response=await fetch('/api/v1/orthomosaics/connection',{cache:'no-store'});
+   const data=await response.json();
+   status.textContent=response.ok?'WebODM conectado e login validado.':('WebODM: '+(data.error||'Falha na conexão.'));
+ }catch(e){status.textContent='Não foi possível consultar o backend: '+e.message}
+};
+
 function mosaicStatusLabel(item){
  const labels={queued:'na fila',submitting:'enviando fotos',processing:'processando',downloading:'baixando mapa',generating_preview:'gerando prévia',calculating_ndvi:'calculando NDVI',completed:'concluído',failed:'erro'};
  return labels[item.status]||(item.has_preview?'pronto':item.has_orthophoto?'sem prévia':'tarefa registrada');
@@ -190,6 +219,7 @@ async function updateMosaics(){
  if(!mosaicSources.length)source.append(new Option('Nenhum voo com fotos originais',''));
  else for(const item of mosaicSources)source.append(new Option(item.flight_id+' ('+item.images_count+' imagens, '+(item.source==='data'?'pasta data':'ZIP enviado')+')',item.source+':'+item.flight_id));
  if(mosaicSources.some(item=>item.source+':'+item.flight_id===oldSource))source.value=oldSource;
+ else{const active=$('flight').value,match=mosaicSources.find(item=>item.flight_id===active);if(match)source.value=match.source+':'+match.flight_id;}
  const old=selectedMosaic,select=$('mosaic-flight');select.replaceChildren();
  if(!mosaicList.length){select.append(new Option('Nenhum ortomosaico disponível',''));selectedMosaic=''}
  else{for(const item of mosaicList)select.append(new Option(item.flight_id+' — '+mosaicStatusLabel(item),item.flight_id));
