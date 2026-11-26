@@ -1,27 +1,57 @@
 #!/usr/bin/env python3
-"""Arquiva o armazenamento NDVI atual para reiniciar o painel sem perder o backup.
+"""Arquiva resultados de sessoes anteriores do AgroDT sem destruir dados locais.
 
-Pare o app.py e os simuladores antes de usar.
+Usado automaticamente por app.py antes de inicializar cada nova sessao. Pode
+tambem ser executado manualmente, sempre com app.py parado.
 """
-from datetime import datetime
+from datetime import datetime, timezone
 from pathlib import Path
 import os
 import sys
+import uuid
 
 HERE = Path(__file__).resolve().parent
-root = Path(os.environ.get("AGRODT_NDVI_DATA", HERE / "armazenamento")).resolve()
+
+
+def archive_storage(storage_root):
+    """Move o armazenamento ativo para uma pasta de backup unica, se existir.
+
+    So opera sobre o armazenamento, sem tocar em imagens na pasta ndvi/data,
+    no codigo, no Docker/WebODM nem nos ambientes virtuais.
+    """
+    path = Path(storage_root).expanduser()
+    if path.is_symlink():
+        raise ValueError("Armazenamento simbolico nao e aceito para arquivamento automatico.")
+    path = path.resolve()
+    protected = {Path("/"), Path.home().resolve(), HERE, HERE.parent}
+    if path in protected or path.parent == path:
+        raise ValueError(f"Caminho inseguro para armazenamento NDVI: {path}")
+    if not path.exists():
+        return None
+    if not path.is_dir():
+        raise ValueError(f"Armazenamento nao e um diretorio: {path}")
+    backup = path.with_name(
+        path.name + "_backup_" +
+        datetime.now(timezone.utc).strftime("%Y%m%d_%H%M%S_%f") +
+        "_" + uuid.uuid4().hex[:8]
+    )
+    path.rename(backup)
+    return backup
+
+
+def main():
+    root = Path(os.environ.get("AGRODT_NDVI_DATA", HERE / "armazenamento"))
+    try:
+        backup = archive_storage(root)
+    except (ValueError, OSError) as exc:
+        print(f"Erro ao arquivar o armazenamento NDVI: {exc}", file=sys.stderr)
+        raise SystemExit(1)
+    if backup:
+        print("Historico anterior arquivado em:", backup)
+    else:
+        print("Nenhum armazenamento anterior encontrado. O painel ja esta vazio.")
+    print("O servidor criara um banco novo e vazio na proxima inicializacao.")
+
 
 if __name__ == "__main__":
-    if not root.exists():
-        print(f"Nenhum armazenamento encontrado em {root}. O painel ja pode iniciar vazio.")
-        raise SystemExit(0)
-    if not root.is_dir():
-        print("Erro: caminho de armazenamento nao e um diretorio.", file=sys.stderr)
-        raise SystemExit(1)
-    if root.name in {"/", ".", ".."}:
-        print("Erro: diretório inseguro.", file=sys.stderr)
-        raise SystemExit(1)
-    backup = root.with_name(root.name + "_backup_" + datetime.now().strftime("%Y%m%d_%H%M%S_%f"))
-    root.rename(backup)
-    print("Historico anterior arquivado em:", backup)
-    print("O servidor criara um novo banco vazio ao iniciar. Nenhum arquivo foi excluido.")
+    main()
