@@ -292,6 +292,17 @@ def parse_multipart(content_type, content):
         raise ValueError("Envie um par RED + NIR nao vazio")
     return fields, files
 
+def preserve_original_zip(payload, flight_id):
+    """Guarda bytes originais do voo para WebODM; nao usa TIFFs NDVI intermediarios."""
+    tmpfolder = ROOT / "temporarios"
+    tmpfolder.mkdir(parents=True, exist_ok=True)
+    tmp = tmpfolder / (uuid.uuid4().hex + ".zip")
+    try:
+        tmp.write_bytes(payload)
+        return import_flight_zip(tmp, ROOT, flight_id)
+    finally:
+        tmp.unlink(missing_ok=True)
+
 def import_generic_zip(payload, flight_id, profile="auto"):
     """Identifica e processa pares RED/NIR de arquivos ZIP de sensores distintos."""
     flight_id = safe_id(flight_id, "flight_id")
@@ -422,6 +433,12 @@ class Handler(BaseHTTPRequestHandler):
             return self.serve_path(HERE / "templates" / "index.html", "text/html; charset=utf-8")
         if path == "/health":
             return self.json_response(200, {"status": "ok", "service": "agrodt-ndvi"})
+        if path == "/api/v1/orthomosaics/connection":
+            try:
+                from orthomosaic_dashboard import check_webodm_connection
+                return self.json_response(200, check_webodm_connection())
+            except Exception as exc:
+                return self.json_response(503, {"status": "disconnected", "error": str(exc)[:300]})
         if path == "/api/v1/orthomosaics/sources":
             return self.json_response(200, {"sources": list_orthomosaic_sources(ROOT, HERE)})
         if path.startswith("/api/v1/orthomosaics/bands/"):
@@ -584,7 +601,19 @@ class Handler(BaseHTTPRequestHandler):
                 profile = self.headers.get("X-Sensor-Profile", "auto").lower()
                 if profile not in ("auto", "sequoia", "sentinel2", "micasense_rededge"):
                     raise ValueError("Perfil de sensor invalido")
-                result = import_generic_zip(self.rfile.read(size), flight, profile=profile)
+                payload = self.rfile.read(size)
+                result = import_generic_zip(payload, flight, profile=profile)
+                result["flight_id"] = flight
+                if result["processed"]:
+                    try:
+                        originals = preserve_original_zip(payload, flight)
+                        result["originals_saved"] = True
+                        result["original_images_count"] = originals["images_count"]
+                    except (ValueError, OSError, zipfile.BadZipFile) as exc:
+                        result["originals_saved"] = False
+                        result["warnings"].append(
+                            "NDVI individual foi processado, mas nao foi possivel preservar "
+                            "as fotos originais do WebODM: " + str(exc))
                 return self.json_response(201 if result["processed"] else 422, result)
             if size <= 0 or size > MAX_UPLOAD:
                 return self.json_response(413, {"error": "Requisicao vazia ou acima de 60 MiB"})
